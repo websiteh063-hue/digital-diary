@@ -9,7 +9,7 @@ import { ArrowLeft, Sparkles, Copy, Check, Share2, Eye, Calendar, Tag, BookOpen 
 
 export default function WritingDetailPage() {
   const params = useParams();
-  const router = Router = useRouter();
+  const router = useRouter();
   const slug = params.slug as string;
 
   const [writing, setWriting] = useState<Writing | null>(null);
