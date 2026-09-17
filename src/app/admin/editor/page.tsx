@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Category, WritingStatus } from '@/types/diary';
-import { Sparkles, Save, Send, Image as ImageIcon, Tag, Check, AlertCircle, ArrowLeft, Bold, Italic, Quote as QuoteIcon, AlignLeft } from 'lucide-react';
+import { Sparkles, Save, Send, Image as ImageIcon, Tag, Check, AlertCircle, ArrowLeft, Bold, Italic, Quote as QuoteIcon, AlignLeft, Eye, Edit3 } from 'lucide-react';
 
 import { detectCategory } from '@/lib/tagging';
+import FormattedContent from '@/components/FormattedContent';
 
 const CATEGORIES: Category[] = [
   "Micro Poems", "Poems", "Quotes", "Stories",
@@ -17,6 +18,8 @@ function WritingEditorContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Category>('Poems');
   const [isAutoCategory, setIsAutoCategory] = useState(true);
@@ -26,6 +29,7 @@ function WritingEditorContent() {
   const [tagInput, setTagInput] = useState('');
   const [status, setStatus] = useState<WritingStatus>('published');
   
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSuggestingTags, setIsSuggestingTags] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -61,6 +65,62 @@ function WritingEditorContent() {
     } catch (err) {
       console.error('Error fetching writing:', err);
     }
+  };
+
+  // Advanced Selection Formatting Helper
+  const applyFormatting = (type: 'bold' | 'italic' | 'bold-italic' | 'quote' | 'stanza') => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      // Fallback if textarea not focused
+      if (type === 'bold') setContent(content + ' **bold text** ');
+      else if (type === 'italic') setContent(content + ' *italic text* ');
+      else if (type === 'bold-italic') setContent(content + ' ***bold & italic text*** ');
+      else if (type === 'quote') setContent(content + '\n> Your quote here...\n');
+      else if (type === 'stanza') setContent(content + '\n\n');
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    const before = content.substring(0, start);
+    const after = content.substring(end);
+
+    let replacement = '';
+    let newCursorPos = start;
+
+    if (type === 'bold') {
+      const textToWrap = selectedText || 'bold text';
+      replacement = `**${textToWrap}**`;
+      newCursorPos = start + replacement.length;
+    } else if (type === 'italic') {
+      const textToWrap = selectedText || 'italic text';
+      replacement = `*${textToWrap}*`;
+      newCursorPos = start + replacement.length;
+    } else if (type === 'bold-italic') {
+      const textToWrap = selectedText || 'bold & italic text';
+      replacement = `***${textToWrap}***`;
+      newCursorPos = start + replacement.length;
+    } else if (type === 'quote') {
+      const textToWrap = selectedText || 'Your quote here...';
+      replacement = `\n> ${textToWrap}\n`;
+      newCursorPos = start + replacement.length;
+    } else if (type === 'stanza') {
+      replacement = '\n\n';
+      newCursorPos = start + 2;
+    }
+
+    setContent(before + replacement + after);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(
+          selectedText ? start : newCursorPos - (type === 'stanza' ? 0 : 2),
+          newCursorPos
+        );
+      }
+    }, 0);
   };
 
   // Auto Tag & Category Suggestion Engine trigger
@@ -216,17 +276,22 @@ function WritingEditorContent() {
         {/* Title & Category Row */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           
-          {/* Title */}
+          {/* Title with Fancy Calligraphy font */}
           <div className="md:col-span-8 space-y-1">
-            <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold">
-              Title
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold">
+                Title
+              </label>
+              <span className="text-[11px] font-calligraphy italic text-amber-700 dark:text-amber-400 font-medium">
+                ✨ Calligraphy Font Active
+              </span>
+            </div>
             <input
               type="text"
               placeholder="Enter writing title (English or Hindi)..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-serif text-xl focus:outline-none focus:ring-2 focus:ring-stone-400"
+              className="w-full px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 text-stone-950 dark:text-stone-50 font-calligraphy italic text-3xl font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/50 placeholder:font-serif placeholder:not-italic placeholder:text-lg"
             />
           </div>
 
@@ -272,57 +337,103 @@ function WritingEditorContent() {
 
         </div>
 
-        {/* Content Formatting Toolbar */}
+        {/* Content Formatting Toolbar & Mode Switcher */}
         <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-paper-100 dark:bg-stone-950 border border-stone-200/80 dark:border-stone-800 text-xs font-sans">
-          <div className="flex items-center gap-1 text-stone-600 dark:text-stone-400">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400 px-2">Quick Helpers:</span>
+          <div className="flex flex-wrap items-center gap-1 text-stone-600 dark:text-stone-400">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400 px-2">Format Selection:</span>
+            
             <button
-              onClick={() => insertFormatting('bold')}
-              className="p-1.5 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1"
-              title="Add Bold"
+              type="button"
+              onClick={() => applyFormatting('bold')}
+              className="px-2.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 font-semibold text-stone-900 dark:text-stone-100 border border-stone-300/60 dark:border-stone-700/60"
+              title="Bold selected text (or insert **bold**)"
             >
               <Bold className="w-3.5 h-3.5" /> Bold
             </button>
+            
             <button
-              onClick={() => insertFormatting('italic')}
-              className="p-1.5 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1"
-              title="Add Italic"
+              type="button"
+              onClick={() => applyFormatting('italic')}
+              className="px-2.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 italic text-stone-900 dark:text-stone-100 border border-stone-300/60 dark:border-stone-700/60"
+              title="Italicize selected text (or insert *italic*)"
             >
               <Italic className="w-3.5 h-3.5" /> Italic
             </button>
+
             <button
-              onClick={() => insertFormatting('quote')}
-              className="p-1.5 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1"
-              title="Insert Quote"
+              type="button"
+              onClick={() => applyFormatting('bold-italic')}
+              className="px-2.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 font-bold italic text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30"
+              title="Bold & Italicize selected text (or insert ***bold italic***)"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Bold & Italic
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => applyFormatting('quote')}
+              className="px-2 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 border border-stone-300/60 dark:border-stone-700/60"
+              title="Quote selected text"
             >
               <QuoteIcon className="w-3.5 h-3.5" /> Quote
             </button>
+
             <button
-              onClick={() => insertFormatting('stanza')}
-              className="p-1.5 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1"
-              title="Poetry Stanza Break"
+              type="button"
+              onClick={() => applyFormatting('stanza')}
+              className="px-2 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 border border-stone-300/60 dark:border-stone-700/60"
+              title="Insert Poetry Stanza Break"
             >
               <AlignLeft className="w-3.5 h-3.5" /> Stanza Break
             </button>
           </div>
 
-          <span className="text-[10px] text-stone-400 font-mono">
-            {content.length} chars
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsPreviewMode(!isPreviewMode)}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors border ${
+                isPreviewMode 
+                  ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border-amber-500/40' 
+                  : 'bg-stone-200/60 dark:bg-stone-800 text-stone-700 dark:text-stone-300 border-stone-300 dark:border-stone-700'
+              }`}
+            >
+              {isPreviewMode ? <Edit3 className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              {isPreviewMode ? 'Back to Editor' : 'Live Preview'}
+            </button>
+
+            <span className="text-[10px] text-stone-400 font-mono">
+              {content.length} chars
+            </span>
+          </div>
         </div>
 
-        {/* Writing Content Textarea */}
+        {/* Writing Content Textarea OR Live Preview */}
         <div className="space-y-1">
-          <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold">
-            Writing Content
+          <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold flex items-center justify-between">
+            <span>Writing Content</span>
+            <span className="text-[10px] text-stone-400 font-normal">
+              Select any text & click Bold, Italic, or Bold & Italic above to apply formatting
+            </span>
           </label>
-          <textarea
-            rows={12}
-            placeholder="Write your poem, quote, or story here..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="w-full px-5 py-4 rounded-2xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-serif text-lg leading-relaxed focus:outline-none focus:ring-2 focus:ring-stone-400 placeholder:italic"
-          />
+          
+          {isPreviewMode ? (
+            <div className="w-full min-h-[300px] p-6 rounded-2xl border border-stone-300 dark:border-stone-700 bg-paper-100/70 dark:bg-stone-950 font-serif text-lg leading-relaxed shadow-inner">
+              <div className="font-calligraphy italic text-3xl font-semibold text-stone-950 dark:text-stone-50 pb-4 border-b border-stone-200 dark:border-stone-800 mb-4">
+                {title || 'Untitled Writing'}
+              </div>
+              <FormattedContent content={content || 'Nothing to preview yet. Start typing...'} />
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              rows={12}
+              placeholder="Write your poem, quote, or story here... (Select any word to apply Bold, Italic, or Bold & Italic)"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full px-5 py-4 rounded-2xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-serif text-lg leading-relaxed focus:outline-none focus:ring-2 focus:ring-stone-400 placeholder:italic"
+            />
+          )}
         </div>
 
         {/* Cover Image URL (Optional) */}

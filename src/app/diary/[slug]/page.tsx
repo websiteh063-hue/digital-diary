@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Writing, SiteSettings } from '@/types/diary';
-import ShareImageModal from '@/components/ShareImageModal';
+import FormattedContent from '@/components/FormattedContent';
 import { ArrowLeft, Sparkles, Copy, Check, Share2, Eye, Calendar, Tag, BookOpen } from 'lucide-react';
 
 export default function WritingDetailPage() {
@@ -145,7 +145,7 @@ export default function WritingDetailPage() {
             {writing.category}
           </span>
 
-          <h1 className={`text-3xl sm:text-5xl font-medium tracking-tight text-stone-950 dark:text-stone-50 leading-tight ${isHindi ? 'font-hindi' : 'font-serif'}`}>
+          <h1 className={`text-3xl sm:text-5xl font-semibold tracking-tight text-stone-950 dark:text-stone-50 leading-tight ${isHindi ? 'font-hindi' : 'font-calligraphy italic'}`}>
             {writing.title}
           </h1>
 
@@ -174,8 +174,8 @@ export default function WritingDetailPage() {
         )}
 
         {/* Content Body */}
-        <div className={`whitespace-pre-line text-stone-900 dark:text-stone-100 ${fontSizes[fontSize]} ${isHindi ? 'font-hindi' : 'font-serif'} py-6 border-y border-stone-200/60 dark:border-stone-800/60`}>
-          {writing.content}
+        <div className={`text-stone-900 dark:text-stone-100 ${fontSizes[fontSize]} ${isHindi ? 'font-hindi' : 'font-serif'} py-6 border-y border-stone-200/60 dark:border-stone-800/60`}>
+          <FormattedContent content={writing.content} isHindi={isHindi} />
         </div>
 
         {/* Tags */}
