@@ -13,9 +13,9 @@ import {
   List, 
   ListOrdered, 
   RemoveFormatting, 
-  Sparkles,
-  Palette,
-  Type
+  Palette, 
+  Highlighter,
+  Sparkles
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -25,7 +25,7 @@ interface RichTextEditorProps {
   minHeight?: string;
 }
 
-const COLORS = [
+const TEXT_COLORS = [
   { name: 'Default Dark', color: '#1c1917' },
   { name: 'Amber Gold', color: '#d97706' },
   { name: 'Rosewood', color: '#be123c' },
@@ -34,25 +34,67 @@ const COLORS = [
   { name: 'Soft Muted', color: '#78716c' },
 ];
 
+const HIGHLIGHT_COLORS = [
+  { name: 'Yellow', color: '#fef08a' },
+  { name: 'Amber Glow', color: '#fde68a' },
+  { name: 'Rose Tint', color: '#fecdd3' },
+  { name: 'Mint Green', color: '#bbf7d0' },
+  { name: 'Sky Blue', color: '#bfdbfe' },
+  { name: 'Remove Highlight', color: 'transparent' },
+];
+
 export default function RichTextEditor({
   value,
   onChange,
   placeholder = "Write your poem, quote, or story here...",
-  minHeight = "320px"
+  minHeight = "340px"
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+  
+  // Floating bubble selection menu position state
+  const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number } | null>(null);
 
-  // Sync value into contentEditable when value is loaded externally (e.g. edit mode)
+  // Sync value into contentEditable when loaded externally
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== value) {
-      // Only set innerHTML if content is genuinely different to avoid resetting cursor during live typing
       if (!isFocused || !editorRef.current.innerHTML.trim()) {
         editorRef.current.innerHTML = value || '';
       }
     }
   }, [value, isFocused]);
+
+  // Handle selection changes to position the floating formatting bubble over selected text
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || !editorRef.current) {
+        setBubblePosition(null);
+        return;
+      }
+
+      if (!editorRef.current.contains(selection.anchorNode)) {
+        setBubblePosition(null);
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const editorRect = editorRef.current.getBoundingClientRect();
+
+      if (rect.width > 0) {
+        setBubblePosition({
+          top: rect.top - editorRect.top - 48,
+          left: rect.left - editorRect.left + rect.width / 2 - 120,
+        });
+      }
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
 
   const handleInput = () => {
     if (editorRef.current) {
@@ -60,10 +102,10 @@ export default function RichTextEditor({
     }
   };
 
+  // Crucial: keep selection active by using onMouseDown={(e) => e.preventDefault()}
   const execCommand = (command: string, valueArg: string | undefined = undefined) => {
     document.execCommand(command, false, valueArg);
     if (editorRef.current) {
-      editorRef.current.focus();
       onChange(editorRef.current.innerHTML);
     }
   };
@@ -92,11 +134,10 @@ export default function RichTextEditor({
     }
   };
 
-  // Extract clean text for character count
   const cleanCharCount = (editorRef.current?.innerText || '').replace(/\n/g, '').length;
 
   return (
-    <div className="rounded-2xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-amber-500/50">
+    <div className="rounded-2xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-amber-500/50 relative">
       
       {/* RICH TEXT WYSIWYG TOOLBAR */}
       <div className="flex flex-wrap items-center justify-between gap-1.5 p-2 bg-paper-100 dark:bg-stone-900 border-b border-stone-200/90 dark:border-stone-800 text-xs font-sans select-none">
@@ -137,9 +178,9 @@ export default function RichTextEditor({
           {/* Bold */}
           <button
             type="button"
-            onClick={() => execCommand('bold')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('bold'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold"
-            title="Bold (Ctrl+B)"
+            title="Bold selected text (Ctrl+B)"
           >
             <Bold className="w-4 h-4" />
           </button>
@@ -147,9 +188,9 @@ export default function RichTextEditor({
           {/* Italic */}
           <button
             type="button"
-            onClick={() => execCommand('italic')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('italic'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 italic"
-            title="Italic (Ctrl+I)"
+            title="Italicize selected text (Ctrl+I)"
           >
             <Italic className="w-4 h-4" />
           </button>
@@ -157,9 +198,9 @@ export default function RichTextEditor({
           {/* Underline */}
           <button
             type="button"
-            onClick={() => execCommand('underline')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('underline'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 underline"
-            title="Underline (Ctrl+U)"
+            title="Underline selected text (Ctrl+U)"
           >
             <Underline className="w-4 h-4" />
           </button>
@@ -167,7 +208,7 @@ export default function RichTextEditor({
           {/* Strikethrough */}
           <button
             type="button"
-            onClick={() => execCommand('strikeThrough')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('strikeThrough'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400 line-through"
             title="Strikethrough"
           >
@@ -176,24 +217,58 @@ export default function RichTextEditor({
 
           <div className="h-4 w-[1px] bg-stone-300 dark:bg-stone-700 mx-1" />
 
+          {/* Highlight Marker */}
+          <div className="relative">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setShowHighlightPicker(!showHighlightPicker)}
+              className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-amber-600 dark:text-amber-400 flex items-center gap-1 bg-amber-400/20"
+              title="Highlight Marker (Yellow/Colors)"
+            >
+              <Highlighter className="w-4 h-4 text-amber-700 dark:text-amber-300" />
+            </button>
+
+            {showHighlightPicker && (
+              <div className="absolute top-full left-0 mt-1 p-2 bg-paper-50 dark:bg-stone-900 rounded-xl border border-stone-300 dark:border-stone-700 shadow-xl z-30 flex items-center gap-1.5">
+                {HIGHLIGHT_COLORS.map((c) => (
+                  <button
+                    key={c.name}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      execCommand('hiliteColor', c.color);
+                      setShowHighlightPicker(false);
+                    }}
+                    className="w-5 h-5 rounded-full border border-stone-300 dark:border-stone-600 hover:scale-110 transition-transform"
+                    style={{ backgroundColor: c.color }}
+                    title={c.name}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Text Color Picker */}
           <div className="relative">
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setShowColorPicker(!showColorPicker)}
-              className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-amber-600 dark:text-amber-400 flex items-center gap-1"
+              className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300 flex items-center gap-1"
               title="Text Color"
             >
               <Palette className="w-4 h-4" />
             </button>
 
             {showColorPicker && (
-              <div className="absolute top-full left-0 mt-1 p-2 bg-paper-50 dark:bg-stone-900 rounded-xl border border-stone-300 dark:border-stone-700 shadow-xl z-20 flex gap-1.5">
-                {COLORS.map((c) => (
+              <div className="absolute top-full left-0 mt-1 p-2 bg-paper-50 dark:bg-stone-900 rounded-xl border border-stone-300 dark:border-stone-700 shadow-xl z-30 flex items-center gap-1.5">
+                {TEXT_COLORS.map((c) => (
                   <button
                     key={c.name}
                     type="button"
-                    onClick={() => {
+                    onMouseDown={(e) => {
+                      e.preventDefault();
                       execCommand('foreColor', c.color);
                       setShowColorPicker(false);
                     }}
@@ -211,7 +286,7 @@ export default function RichTextEditor({
           {/* Alignment Left */}
           <button
             type="button"
-            onClick={() => execCommand('justifyLeft')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('justifyLeft'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300"
             title="Align Left"
           >
@@ -221,7 +296,7 @@ export default function RichTextEditor({
           {/* Alignment Center */}
           <button
             type="button"
-            onClick={() => execCommand('justifyCenter')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('justifyCenter'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300"
             title="Align Center"
           >
@@ -231,7 +306,7 @@ export default function RichTextEditor({
           {/* Alignment Right */}
           <button
             type="button"
-            onClick={() => execCommand('justifyRight')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('justifyRight'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300"
             title="Align Right"
           >
@@ -243,7 +318,7 @@ export default function RichTextEditor({
           {/* Quote Block */}
           <button
             type="button"
-            onClick={() => execCommand('formatBlock', '<blockquote>')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('formatBlock', 'blockquote'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300"
             title="Quote Block"
           >
@@ -253,7 +328,7 @@ export default function RichTextEditor({
           {/* Lists */}
           <button
             type="button"
-            onClick={() => execCommand('insertUnorderedList')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('insertUnorderedList'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300"
             title="Bulleted List"
           >
@@ -262,7 +337,7 @@ export default function RichTextEditor({
 
           <button
             type="button"
-            onClick={() => execCommand('insertOrderedList')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('insertOrderedList'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300"
             title="Numbered List"
           >
@@ -272,7 +347,7 @@ export default function RichTextEditor({
           {/* Clear Formatting */}
           <button
             type="button"
-            onClick={() => execCommand('removeFormat')}
+            onMouseDown={(e) => { e.preventDefault(); execCommand('removeFormat'); }}
             className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-red-600 dark:text-red-400"
             title="Clear Formatting"
           >
@@ -288,6 +363,63 @@ export default function RichTextEditor({
 
       {/* VISUAL RICH CONTENTEDITABLE AREA */}
       <div className="relative p-5">
+        
+        {/* FLOATING BUBBLE TOOLBAR ON HIGHLIGHTED TEXT */}
+        {bubblePosition && (
+          <div 
+            className="absolute z-40 bg-stone-900 text-stone-50 rounded-xl px-2 py-1 shadow-2xl border border-stone-700 flex items-center gap-1.5 animate-fade-in"
+            style={{ 
+              top: `${Math.max(10, bubblePosition.top)}px`, 
+              left: `${Math.max(10, bubblePosition.left)}px` 
+            }}
+          >
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); execCommand('bold'); }}
+              className="p-1.5 hover:bg-stone-800 rounded font-bold"
+              title="Bold"
+            >
+              <Bold className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); execCommand('italic'); }}
+              className="p-1.5 hover:bg-stone-800 rounded italic"
+              title="Italic"
+            >
+              <Italic className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); execCommand('underline'); }}
+              className="p-1.5 hover:bg-stone-800 rounded underline"
+              title="Underline"
+            >
+              <Underline className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); execCommand('hiliteColor', '#fef08a'); }}
+              className="p-1.5 hover:bg-stone-800 rounded text-amber-300 flex items-center gap-1"
+              title="Highlight Yellow"
+            >
+              <Highlighter className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); execCommand('formatBlock', 'blockquote'); }}
+              className="p-1.5 hover:bg-stone-800 rounded"
+              title="Quote"
+            >
+              <Quote className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         <div
           ref={editorRef}
           contentEditable
@@ -295,7 +427,7 @@ export default function RichTextEditor({
           onInput={handleInput}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className="w-full focus:outline-none font-serif text-lg leading-relaxed text-stone-900 dark:text-stone-100 min-h-[300px] prose dark:prose-invert max-w-none [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:bg-amber-500/10 [&_blockquote]:py-2 [&_blockquote]:rounded-r-xl"
+          className="w-full focus:outline-none font-serif text-lg leading-relaxed text-stone-900 dark:text-stone-100 min-h-[320px] prose dark:prose-invert max-w-none [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:bg-amber-500/10 [&_blockquote]:py-2 [&_blockquote]:rounded-r-xl"
           style={{ minHeight }}
         />
 
