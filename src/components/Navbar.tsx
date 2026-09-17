@@ -64,15 +64,15 @@ export default function Navbar() {
         <div className="flex items-center gap-3 sm:gap-4">
           <ThemeToggle />
 
-          {/* PROMINENT DIRECT LINK TO ADMIN WRITING STUDIO */}
+          {/* RENAMED BUTTON: Write For Us */}
           <Link
             href="/admin"
             className="relative group flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-600 via-rose-600 to-amber-700 text-white font-sans text-xs uppercase font-bold tracking-wider shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 overflow-hidden"
-            title="Go to Admin Writing Studio"
+            title="Write For Us"
           >
             <span className="relative z-10 flex items-center gap-1.5">
               <PenTool className="w-3.5 h-3.5 text-amber-200" />
-              <span>Writing Studio</span>
+              <span>Write For Us</span>
             </span>
             <Sparkles className="w-3 h-3 text-amber-200 relative z-10 animate-pulse-slow" />
             <span className="absolute inset-0 bg-gradient-to-r from-rose-600 via-amber-600 to-rose-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -115,7 +115,7 @@ export default function Navbar() {
               className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-600 via-rose-600 to-amber-700 text-white font-sans text-xs uppercase font-bold tracking-wider shadow-md"
             >
               <PenTool className="w-4 h-4" />
-              Open Admin Writing Studio
+              Write For Us
             </Link>
           </div>
         </div>

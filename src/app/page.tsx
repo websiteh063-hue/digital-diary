@@ -52,17 +52,17 @@ export default function HomePage() {
           And some stay somewhere between the two."
         </p>
 
-        {/* Enter the Diary Experience Button */}
+        {/* Enter the Diary & Write For Us Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
           <EnterDiaryTransition />
 
-          {/* DIRECT PAGE LINK TO ADMIN WRITING STUDIO */}
+          {/* RENAMED LINK: Write For Us */}
           <Link
             href="/admin"
             className="flex items-center gap-2 px-6 py-4 rounded-full border border-amber-500/40 bg-paper-100/80 dark:bg-stone-900/80 hover:bg-amber-500/10 text-amber-900 dark:text-amber-300 font-sans text-xs tracking-widest uppercase font-bold transition-all shadow-md"
           >
             <PenTool className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-            Admin Writing Studio &rarr;
+            Write For Us &rarr;
           </Link>
         </div>
 
@@ -206,7 +206,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PROMINENT DIRECT PAGE BANNER FOR ADMIN WRITING STUDIO */}
+      {/* PROMINENT DIRECT PAGE BANNER FOR WRITE FOR US */}
       <section className="p-8 sm:p-10 rounded-3xl bg-gradient-to-r from-amber-600 via-rose-600 to-amber-700 text-white shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="space-y-2 text-center sm:text-left">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] uppercase tracking-wider font-bold">
@@ -216,7 +216,7 @@ export default function HomePage() {
             Ready to write a new poem or story?
           </h3>
           <p className="text-xs sm:text-sm font-sans text-white/90 max-w-md">
-            Go straight to your private Admin Writing Studio to draft, format, auto-suggest tags, and publish with instant branding & default signature.
+            Go straight to your private Writing Studio to draft, format, auto-suggest tags, and publish with instant branding & default signature.
           </p>
         </div>
 
@@ -225,7 +225,7 @@ export default function HomePage() {
           className="shrink-0 px-6 py-3.5 rounded-full bg-white text-stone-950 font-sans text-xs uppercase font-bold tracking-wider hover:bg-amber-100 hover:scale-105 transition-all shadow-lg flex items-center gap-2"
         >
           <PenTool className="w-4 h-4 text-amber-700" />
-          Open Admin Writing Studio &rarr;
+          Write For Us &rarr;
         </Link>
       </section>
 

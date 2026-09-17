@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Feather, Heart, PenTool, Sparkles } from 'lucide-react';
+import { Feather, Heart, PenTool } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -15,11 +15,11 @@ export default function Footer() {
           <div className="h-[1px] w-16 bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
         </div>
 
-        {/* PROMINENT DIRECT LINK TO ADMIN WRITING STUDIO */}
+        {/* PROMINENT DIRECT LINK TO WRITE FOR US */}
         <div className="max-w-md mx-auto p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-purple-500/15 border border-amber-500/30 flex items-center justify-between gap-4">
           <div className="text-left">
             <span className="text-[10px] font-sans uppercase tracking-widest text-amber-700 dark:text-amber-400 font-bold block">Author Private Access</span>
-            <span className="font-serif text-sm text-stone-900 dark:text-stone-100 font-medium">Admin Writing Studio</span>
+            <span className="font-serif text-sm text-stone-900 dark:text-stone-100 font-medium">Write For Us</span>
           </div>
 
           <Link
@@ -27,7 +27,7 @@ export default function Footer() {
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-stone-900 text-stone-50 dark:bg-amber-400 dark:text-stone-950 font-sans text-xs uppercase font-bold tracking-wider hover:scale-105 transition-all shadow-md"
           >
             <PenTool className="w-3.5 h-3.5" />
-            Write & Edit &rarr;
+            Write For Us &rarr;
           </Link>
         </div>
 
@@ -62,7 +62,7 @@ export default function Footer() {
           </Link>
           <span>•</span>
           <Link href="/admin" className="hover:text-amber-700 dark:hover:text-amber-400 transition-colors font-bold text-amber-800 dark:text-amber-300">
-            Admin Writing Studio
+            Write For Us
           </Link>
         </div>
 
