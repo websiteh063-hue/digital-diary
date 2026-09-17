@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Category, WritingStatus } from '@/types/diary';
 import { Sparkles, Save, Send, Image as ImageIcon, Tag, Check, AlertCircle, ArrowLeft, Bold, Italic, Quote as QuoteIcon, AlignLeft } from 'lucide-react';
 
+import { detectCategory } from '@/lib/tagging';
+
 const CATEGORIES: Category[] = [
   "Micro Poems", "Poems", "Quotes", "Stories",
   "Love", "Heartbreak", "Life", "Thoughts"
@@ -17,6 +19,7 @@ function WritingEditorContent() {
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Category>('Poems');
+  const [isAutoCategory, setIsAutoCategory] = useState(true);
   const [content, setContent] = useState('');
   const [coverImage, setCoverImage] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -33,6 +36,14 @@ function WritingEditorContent() {
     }
   }, [editId]);
 
+  // Auto-detect category dynamically when typing title or content
+  useEffect(() => {
+    if (isAutoCategory && (title || content) && !editId) {
+      const detected = detectCategory(title, content);
+      setCategory(detected);
+    }
+  }, [title, content, isAutoCategory, editId]);
+
   const fetchWritingToEdit = async (id: string) => {
     try {
       const res = await fetch(`/api/writings/${id}`);
@@ -45,13 +56,14 @@ function WritingEditorContent() {
         setCoverImage(w.cover_image || '');
         setTags(w.tags || []);
         setStatus(w.status || 'published');
+        setIsAutoCategory(false);
       }
     } catch (err) {
       console.error('Error fetching writing:', err);
     }
   };
 
-  // Auto Tag Suggestion Engine trigger
+  // Auto Tag & Category Suggestion Engine trigger
   const handleSuggestTags = async () => {
     if (!content && !title) return;
     setIsSuggestingTags(true);
@@ -62,11 +74,16 @@ function WritingEditorContent() {
         body: JSON.stringify({ title, content, category }),
       });
       const data = await res.json();
-      if (data.success && data.tags) {
-        // Merge without duplicates
-        const merged = Array.from(new Set([...tags, ...data.tags]));
-        setTags(merged);
-        setMessage({ type: 'success', text: `Suggested ${data.tags.length} relevant tags!` });
+      if (data.success) {
+        if (data.tags) {
+          const merged = Array.from(new Set([...tags, ...data.tags]));
+          setTags(merged);
+        }
+        if (data.category) {
+          setCategory(data.category);
+          setIsAutoCategory(true);
+        }
+        setMessage({ type: 'success', text: `Auto-selected "${data.category || category}" category & suggested ${data.tags?.length || 0} tags!` });
         setTimeout(() => setMessage(null), 3000);
       }
     } catch (err) {
@@ -213,14 +230,36 @@ function WritingEditorContent() {
             />
           </div>
 
-          {/* Category Dropdown */}
+          {/* Category Dropdown with Auto Detection */}
           <div className="md:col-span-4 space-y-1">
-            <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold">
-              Category
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold">
+                Category
+              </label>
+              {isAutoCategory ? (
+                <span className="text-[10px] font-sans font-medium text-amber-700 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full flex items-center gap-1 border border-amber-500/30">
+                  <Sparkles className="w-3 h-3 text-amber-600" /> Auto Detected
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAutoCategory(true);
+                    setCategory(detectCategory(title, content));
+                  }}
+                  className="text-[10px] font-sans font-medium text-stone-500 hover:text-amber-600 dark:hover:text-amber-400 flex items-center gap-1 transition-colors"
+                  title="Click to auto-select category based on title & text"
+                >
+                  <Sparkles className="w-3 h-3" /> Auto Select
+                </button>
+              )}
+            </div>
             <select
               value={category}
-              onChange={(e: any) => setCategory(e.target.value)}
+              onChange={(e: any) => {
+                setCategory(e.target.value);
+                setIsAutoCategory(false);
+              }}
               className="w-full px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
             >
               {CATEGORIES.map((cat) => (
