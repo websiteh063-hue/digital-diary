@@ -9,7 +9,19 @@ interface FormattedContentProps {
 export default function FormattedContent({ content, className = '', isHindi = false }: FormattedContentProps) {
   if (!content) return null;
 
-  // Split by double line breaks into paragraphs / stanzas
+  // Detect if content has HTML tags
+  const isHtml = /<[a-z][\s\S]*>/i.test(content);
+
+  if (isHtml) {
+    return (
+      <div 
+        className={`prose dark:prose-invert max-w-none text-stone-900 dark:text-stone-100 leading-relaxed [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-4 [&_blockquote]:bg-amber-500/10 [&_blockquote]:py-2 [&_blockquote]:rounded-r-2xl ${className}`}
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
+
+  // Fallback markdown parsing for non-HTML entries
   const stanzas = content.split(/\n\s*\n/);
 
   return (

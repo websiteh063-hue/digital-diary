@@ -7,6 +7,7 @@ import { Sparkles, Save, Send, Image as ImageIcon, Tag, Check, AlertCircle, Arro
 
 import { detectCategory } from '@/lib/tagging';
 import FormattedContent from '@/components/FormattedContent';
+import RichTextEditor from '@/components/RichTextEditor';
 
 const CATEGORIES: Category[] = [
   "Micro Poems", "Poems", "Quotes", "Stories",
@@ -337,58 +338,13 @@ function WritingEditorContent() {
 
         </div>
 
-        {/* Content Formatting Toolbar & Mode Switcher */}
-        <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-paper-100 dark:bg-stone-950 border border-stone-200/80 dark:border-stone-800 text-xs font-sans">
-          <div className="flex flex-wrap items-center gap-1 text-stone-600 dark:text-stone-400">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400 px-2">Format Selection:</span>
+        {/* Writing Content Field with Rich Text WYSIWYG Editor */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold flex items-center gap-1.5">
+              <span>Writing Content</span>
+            </label>
             
-            <button
-              type="button"
-              onClick={() => applyFormatting('bold')}
-              className="px-2.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 font-semibold text-stone-900 dark:text-stone-100 border border-stone-300/60 dark:border-stone-700/60"
-              title="Bold selected text (or insert **bold**)"
-            >
-              <Bold className="w-3.5 h-3.5" /> Bold
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => applyFormatting('italic')}
-              className="px-2.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 italic text-stone-900 dark:text-stone-100 border border-stone-300/60 dark:border-stone-700/60"
-              title="Italicize selected text (or insert *italic*)"
-            >
-              <Italic className="w-3.5 h-3.5" /> Italic
-            </button>
-
-            <button
-              type="button"
-              onClick={() => applyFormatting('bold-italic')}
-              className="px-2.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 font-bold italic text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30"
-              title="Bold & Italicize selected text (or insert ***bold italic***)"
-            >
-              <Sparkles className="w-3.5 h-3.5" /> Bold & Italic
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => applyFormatting('quote')}
-              className="px-2 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 border border-stone-300/60 dark:border-stone-700/60"
-              title="Quote selected text"
-            >
-              <QuoteIcon className="w-3.5 h-3.5" /> Quote
-            </button>
-
-            <button
-              type="button"
-              onClick={() => applyFormatting('stanza')}
-              className="px-2 py-1 rounded hover:bg-stone-200 dark:hover:bg-stone-800 flex items-center gap-1 border border-stone-300/60 dark:border-stone-700/60"
-              title="Insert Poetry Stanza Break"
-            >
-              <AlignLeft className="w-3.5 h-3.5" /> Stanza Break
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setIsPreviewMode(!isPreviewMode)}
@@ -399,39 +355,22 @@ function WritingEditorContent() {
               }`}
             >
               {isPreviewMode ? <Edit3 className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              {isPreviewMode ? 'Back to Editor' : 'Live Preview'}
+              {isPreviewMode ? 'Back to Rich Editor' : 'Live Preview'}
             </button>
-
-            <span className="text-[10px] text-stone-400 font-mono">
-              {content.length} chars
-            </span>
           </div>
-        </div>
 
-        {/* Writing Content Textarea OR Live Preview */}
-        <div className="space-y-1">
-          <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold flex items-center justify-between">
-            <span>Writing Content</span>
-            <span className="text-[10px] text-stone-400 font-normal">
-              Select any text & click Bold, Italic, or Bold & Italic above to apply formatting
-            </span>
-          </label>
-          
           {isPreviewMode ? (
-            <div className="w-full min-h-[300px] p-6 rounded-2xl border border-stone-300 dark:border-stone-700 bg-paper-100/70 dark:bg-stone-950 font-serif text-lg leading-relaxed shadow-inner">
+            <div className="w-full min-h-[320px] p-6 rounded-2xl border border-stone-300 dark:border-stone-700 bg-paper-100/70 dark:bg-stone-950 font-serif text-lg leading-relaxed shadow-inner">
               <div className="font-calligraphy italic text-3xl font-semibold text-stone-950 dark:text-stone-50 pb-4 border-b border-stone-200 dark:border-stone-800 mb-4">
                 {title || 'Untitled Writing'}
               </div>
               <FormattedContent content={content || 'Nothing to preview yet. Start typing...'} />
             </div>
           ) : (
-            <textarea
-              ref={textareaRef}
-              rows={12}
-              placeholder="Write your poem, quote, or story here... (Select any word to apply Bold, Italic, or Bold & Italic)"
+            <RichTextEditor
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full px-5 py-4 rounded-2xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-serif text-lg leading-relaxed focus:outline-none focus:ring-2 focus:ring-stone-400 placeholder:italic"
+              onChange={setContent}
+              placeholder="Write your poem, quote, or story here... Highlight any text in the middle to make it bold, italic, underlined, centered, or colored!"
             />
           )}
         </div>
