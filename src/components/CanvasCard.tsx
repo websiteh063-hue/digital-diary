@@ -2,6 +2,7 @@
 
 import React, { forwardRef } from 'react';
 import { Writing, ShareCardConfig, CardTheme, AspectRatio } from '@/types/diary';
+import { normalizeContentToHtml } from '@/lib/contentFormatter';
 
 interface CanvasCardProps {
   writing: Writing;
@@ -123,15 +124,17 @@ export const CanvasCard = forwardRef<HTMLDivElement, CanvasCardProps>(({
 
       {/* Main Content Area */}
       <div className={`my-auto flex flex-col ${alignClass} w-full py-4`}>
+
         {/* Title */}
-        <h2 className={`text-xl sm:text-2xl font-medium mb-4 tracking-tight ${currentTheme.accent} ${fontClass}`}>
+        <h2 className={`text-2xl sm:text-4xl font-semibold mb-4 tracking-tight ${currentTheme.accent} ${isHindi ? 'font-hindi' : 'font-calligraphy'}`}>
           {writing.title}
         </h2>
 
         {/* Content */}
-        <div className={`whitespace-pre-line ${textSizeClass} ${fontClass} opacity-95 max-w-full overflow-hidden`}>
-          {writing.content}
-        </div>
+        <div 
+          className={`whitespace-pre-line ${textSizeClass} ${fontClass} opacity-95 max-w-full overflow-hidden [&_blockquote]:border-l-2 [&_blockquote]:border-amber-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_u]:underline [&_u]:decoration-amber-500`}
+          dangerouslySetInnerHTML={{ __html: normalizeContentToHtml(writing.content) }}
+        />
       </div>
 
       {/* Footer: Tagline & Signature */}

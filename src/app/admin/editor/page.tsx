@@ -68,62 +68,6 @@ function WritingEditorContent() {
     }
   };
 
-  // Advanced Selection Formatting Helper
-  const applyFormatting = (type: 'bold' | 'italic' | 'bold-italic' | 'quote' | 'stanza') => {
-    const textarea = textareaRef.current;
-    if (!textarea) {
-      // Fallback if textarea not focused
-      if (type === 'bold') setContent(content + ' **bold text** ');
-      else if (type === 'italic') setContent(content + ' *italic text* ');
-      else if (type === 'bold-italic') setContent(content + ' ***bold & italic text*** ');
-      else if (type === 'quote') setContent(content + '\n> Your quote here...\n');
-      else if (type === 'stanza') setContent(content + '\n\n');
-      return;
-    }
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    const before = content.substring(0, start);
-    const after = content.substring(end);
-
-    let replacement = '';
-    let newCursorPos = start;
-
-    if (type === 'bold') {
-      const textToWrap = selectedText || 'bold text';
-      replacement = `**${textToWrap}**`;
-      newCursorPos = start + replacement.length;
-    } else if (type === 'italic') {
-      const textToWrap = selectedText || 'italic text';
-      replacement = `*${textToWrap}*`;
-      newCursorPos = start + replacement.length;
-    } else if (type === 'bold-italic') {
-      const textToWrap = selectedText || 'bold & italic text';
-      replacement = `***${textToWrap}***`;
-      newCursorPos = start + replacement.length;
-    } else if (type === 'quote') {
-      const textToWrap = selectedText || 'Your quote here...';
-      replacement = `\n> ${textToWrap}\n`;
-      newCursorPos = start + replacement.length;
-    } else if (type === 'stanza') {
-      replacement = '\n\n';
-      newCursorPos = start + 2;
-    }
-
-    setContent(before + replacement + after);
-
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(
-          selectedText ? start : newCursorPos - (type === 'stanza' ? 0 : 2),
-          newCursorPos
-        );
-      }
-    }, 0);
-  };
-
   // Auto Tag & Category Suggestion Engine trigger
   const handleSuggestTags = async () => {
     if (!content && !title) return;
@@ -167,19 +111,6 @@ function WritingEditorContent() {
 
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter(t => t !== tagToRemove));
-  };
-
-  // Content formatting helpers
-  const insertFormatting = (type: 'bold' | 'italic' | 'quote' | 'stanza') => {
-    if (type === 'stanza') {
-      setContent(content + '\n\n');
-    } else if (type === 'quote') {
-      setContent(content + '\n"Your quote here..."\n');
-    } else if (type === 'bold') {
-      setContent(content + ' **bold text** ');
-    } else if (type === 'italic') {
-      setContent(content + ' *italic text* ');
-    }
   };
 
   const handleSave = async (targetStatus: WritingStatus) => {

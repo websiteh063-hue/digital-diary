@@ -284,6 +284,7 @@ export function saveWriting(data: Partial<Writing> & { title: string; category: 
   }
 
   const excerpt = data.excerpt || data.content
+    .replace(/<[^>]*>/g, '')
     .replace(/\n+/g, ' ')
     .slice(0, 160) + (data.content.length > 160 ? '...' : '');
 

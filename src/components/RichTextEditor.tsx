@@ -54,6 +54,15 @@ export default function RichTextEditor({
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   
+  // Active formatting state indicators
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    strikeThrough: false,
+    blockquote: false,
+  });
+
   // Floating bubble selection menu position state
   const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number } | null>(null);
 
@@ -66,10 +75,42 @@ export default function RichTextEditor({
     }
   }, [value, isFocused]);
 
-  // Handle selection changes to position the floating formatting bubble over selected text
+  // Track selection change & active format state
   useEffect(() => {
     const handleSelectionChange = () => {
       const selection = window.getSelection();
+
+      // Update active formatting states
+      try {
+        const isBold = document.queryCommandState('bold');
+        const isItalic = document.queryCommandState('italic');
+        const isUnderline = document.queryCommandState('underline');
+        const isStrikeThrough = document.queryCommandState('strikeThrough');
+        
+        let isBlockquote = false;
+        if (selection && selection.anchorNode) {
+          let node: Node | null = selection.anchorNode;
+          while (node && node !== editorRef.current) {
+            if (node.nodeName === 'BLOCKQUOTE') {
+              isBlockquote = true;
+              break;
+            }
+            node = node.parentNode;
+          }
+        }
+
+        setActiveFormats({
+          bold: isBold,
+          italic: isItalic,
+          underline: isUnderline,
+          strikeThrough: isStrikeThrough,
+          blockquote: isBlockquote,
+        });
+      } catch (err) {
+        // Ignore queryCommandState edge cases
+      }
+
+      // Handle floating bubble position
       if (!selection || selection.isCollapsed || !editorRef.current) {
         setBubblePosition(null);
         return;
@@ -102,7 +143,23 @@ export default function RichTextEditor({
     }
   };
 
-  // Crucial: keep selection active by using onMouseDown={(e) => e.preventDefault()}
+  // Keyboard shortcut listener (Ctrl+B, Ctrl+I, Ctrl+U)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault();
+        execCommand('bold');
+      } else if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        execCommand('italic');
+      } else if (e.key === 'u' || e.key === 'U') {
+        e.preventDefault();
+        execCommand('underline');
+      }
+    }
+  };
+
+  // Keep selection active by using onMouseDown={(e) => e.preventDefault()}
   const execCommand = (command: string, valueArg: string | undefined = undefined) => {
     document.execCommand(command, false, valueArg);
     if (editorRef.current) {
@@ -110,9 +167,16 @@ export default function RichTextEditor({
     }
   };
 
+  const insertStanzaBreak = () => {
+    execCommand('insertParagraph');
+    if (editorRef.current) {
+      onChange(editorRef.current.innerHTML);
+    }
+  };
+
   const formatFontFamily = (fontName: string) => {
     if (fontName === 'calligraphy') {
-      execCommand('fontName', 'Great Vibes, Cormorant Garamond, serif');
+      execCommand('fontName', 'Alex Brush, Great Vibes, Cormorant Garamond, serif');
     } else if (fontName === 'serif') {
       execCommand('fontName', 'Cormorant Garamond, Georgia, serif');
     } else if (fontName === 'display') {
@@ -140,9 +204,9 @@ export default function RichTextEditor({
     <div className="rounded-2xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 overflow-hidden shadow-sm transition-all focus-within:ring-2 focus-within:ring-amber-500/50 relative">
       
       {/* RICH TEXT WYSIWYG TOOLBAR */}
-      <div className="flex flex-wrap items-center justify-between gap-1.5 p-2 bg-paper-100 dark:bg-stone-900 border-b border-stone-200/90 dark:border-stone-800 text-xs font-sans select-none">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 p-2.5 bg-paper-100 dark:bg-stone-900 border-b border-stone-200/90 dark:border-stone-800 text-xs font-sans select-none">
         
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1.5">
           
           {/* Font Family Dropdown */}
           <div className="relative inline-block">
@@ -179,37 +243,77 @@ export default function RichTextEditor({
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); execCommand('bold'); }}
-            className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold"
+            className={`px-2.5 py-1 rounded-lg font-bold transition-colors border ${
+              activeFormats.bold 
+                ? 'bg-amber-500/25 text-amber-950 dark:text-amber-200 border-amber-500/50 shadow-sm' 
+                : 'hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border-transparent'
+            }`}
             title="Bold selected text (Ctrl+B)"
           >
-            <Bold className="w-4 h-4" />
+            <span className="flex items-center gap-1"><Bold className="w-3.5 h-3.5" /> Bold</span>
           </button>
 
           {/* Italic */}
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); execCommand('italic'); }}
-            className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 italic"
+            className={`px-2.5 py-1 rounded-lg italic transition-colors border ${
+              activeFormats.italic 
+                ? 'bg-amber-500/25 text-amber-950 dark:text-amber-200 border-amber-500/50 shadow-sm font-semibold' 
+                : 'hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border-transparent'
+            }`}
             title="Italicize selected text (Ctrl+I)"
           >
-            <Italic className="w-4 h-4" />
+            <span className="flex items-center gap-1"><Italic className="w-3.5 h-3.5" /> Italic</span>
           </button>
 
           {/* Underline */}
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); execCommand('underline'); }}
-            className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 underline"
+            className={`px-2.5 py-1 rounded-lg underline transition-colors border ${
+              activeFormats.underline 
+                ? 'bg-amber-500/25 text-amber-950 dark:text-amber-200 border-amber-500/50 shadow-sm font-semibold' 
+                : 'hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border-transparent'
+            }`}
             title="Underline selected text (Ctrl+U)"
           >
-            <Underline className="w-4 h-4" />
+            <span className="flex items-center gap-1"><Underline className="w-3.5 h-3.5" /> Underline</span>
+          </button>
+
+          {/* Quote Block */}
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); execCommand('formatBlock', 'blockquote'); }}
+            className={`px-2.5 py-1 rounded-lg transition-colors border ${
+              activeFormats.blockquote 
+                ? 'bg-amber-500/25 text-amber-950 dark:text-amber-200 border-amber-500/50 shadow-sm font-semibold' 
+                : 'hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border-transparent'
+            }`}
+            title="Quote Block"
+          >
+            <span className="flex items-center gap-1"><Quote className="w-3.5 h-3.5" /> Quote</span>
+          </button>
+
+          {/* Stanza Break */}
+          <button
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); insertStanzaBreak(); }}
+            className="px-2.5 py-1 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-800 dark:text-stone-200 border border-stone-300/60 dark:border-stone-700/60"
+            title="Insert Poetry Stanza Break"
+          >
+            <span className="flex items-center gap-1"><AlignLeft className="w-3.5 h-3.5" /> Stanza Break</span>
           </button>
 
           {/* Strikethrough */}
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); execCommand('strikeThrough'); }}
-            className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400 line-through"
+            className={`p-1.5 rounded-lg line-through transition-colors border ${
+              activeFormats.strikeThrough 
+                ? 'bg-amber-500/25 text-amber-950 dark:text-amber-200 border-amber-500/50' 
+                : 'hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-400 border-transparent'
+            }`}
             title="Strikethrough"
           >
             <Strikethrough className="w-4 h-4" />
@@ -283,7 +387,7 @@ export default function RichTextEditor({
 
           <div className="h-4 w-[1px] bg-stone-300 dark:bg-stone-700 mx-1" />
 
-          {/* Alignment Left */}
+          {/* Alignment Controls */}
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); execCommand('justifyLeft'); }}
@@ -293,7 +397,6 @@ export default function RichTextEditor({
             <AlignLeft className="w-4 h-4" />
           </button>
 
-          {/* Alignment Center */}
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); execCommand('justifyCenter'); }}
@@ -303,7 +406,6 @@ export default function RichTextEditor({
             <AlignCenter className="w-4 h-4" />
           </button>
 
-          {/* Alignment Right */}
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); execCommand('justifyRight'); }}
@@ -314,16 +416,6 @@ export default function RichTextEditor({
           </button>
 
           <div className="h-4 w-[1px] bg-stone-300 dark:bg-stone-700 mx-1" />
-
-          {/* Quote Block */}
-          <button
-            type="button"
-            onMouseDown={(e) => { e.preventDefault(); execCommand('formatBlock', 'blockquote'); }}
-            className="p-1.5 rounded-lg hover:bg-stone-200/70 dark:hover:bg-stone-800 text-stone-700 dark:text-stone-300"
-            title="Quote Block"
-          >
-            <Quote className="w-4 h-4" />
-          </button>
 
           {/* Lists */}
           <button
@@ -367,7 +459,7 @@ export default function RichTextEditor({
         {/* FLOATING BUBBLE TOOLBAR ON HIGHLIGHTED TEXT */}
         {bubblePosition && (
           <div 
-            className="absolute z-40 bg-stone-900 text-stone-50 rounded-xl px-2 py-1 shadow-2xl border border-stone-700 flex items-center gap-1.5 animate-fade-in"
+            className="absolute z-40 bg-stone-900 text-stone-50 rounded-xl px-2 py-1 shadow-2xl border border-stone-700 flex items-center gap-1.5 animate-fade-in select-none"
             style={{ 
               top: `${Math.max(10, bubblePosition.top)}px`, 
               left: `${Math.max(10, bubblePosition.left)}px` 
@@ -376,7 +468,7 @@ export default function RichTextEditor({
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); execCommand('bold'); }}
-              className="p-1.5 hover:bg-stone-800 rounded font-bold"
+              className={`p-1.5 hover:bg-stone-800 rounded font-bold ${activeFormats.bold ? 'text-amber-400' : ''}`}
               title="Bold"
             >
               <Bold className="w-3.5 h-3.5" />
@@ -385,7 +477,7 @@ export default function RichTextEditor({
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); execCommand('italic'); }}
-              className="p-1.5 hover:bg-stone-800 rounded italic"
+              className={`p-1.5 hover:bg-stone-800 rounded italic ${activeFormats.italic ? 'text-amber-400' : ''}`}
               title="Italic"
             >
               <Italic className="w-3.5 h-3.5" />
@@ -394,7 +486,7 @@ export default function RichTextEditor({
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); execCommand('underline'); }}
-              className="p-1.5 hover:bg-stone-800 rounded underline"
+              className={`p-1.5 hover:bg-stone-800 rounded underline ${activeFormats.underline ? 'text-amber-400' : ''}`}
               title="Underline"
             >
               <Underline className="w-3.5 h-3.5" />
@@ -412,7 +504,7 @@ export default function RichTextEditor({
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); execCommand('formatBlock', 'blockquote'); }}
-              className="p-1.5 hover:bg-stone-800 rounded"
+              className={`p-1.5 hover:bg-stone-800 rounded ${activeFormats.blockquote ? 'text-amber-400' : ''}`}
               title="Quote"
             >
               <Quote className="w-3.5 h-3.5" />
@@ -425,9 +517,10 @@ export default function RichTextEditor({
           contentEditable
           suppressContentEditableWarning
           onInput={handleInput}
+          onKeyDown={handleKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          className="w-full focus:outline-none font-serif text-lg leading-relaxed text-stone-900 dark:text-stone-100 min-h-[320px] prose dark:prose-invert max-w-none [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:bg-amber-500/10 [&_blockquote]:py-2 [&_blockquote]:rounded-r-xl"
+          className="w-full focus:outline-none font-serif text-lg leading-relaxed text-stone-900 dark:text-stone-100 min-h-[320px] prose dark:prose-invert max-w-none [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:bg-amber-500/10 [&_blockquote]:py-2 [&_blockquote]:rounded-r-xl [&_u]:decoration-amber-500 [&_u]:decoration-2 [&_u]:underline-offset-4"
           style={{ minHeight }}
         />
 

@@ -1,11 +1,17 @@
 import type { Metadata } from 'next';
-import { Great_Vibes, Cormorant_Garamond, Playfair_Display, Noto_Serif_Devanagari, Plus_Jakarta_Sans } from 'next/font/google';
+import { Alex_Brush, Great_Vibes, Cormorant_Garamond, Playfair_Display, Noto_Serif_Devanagari, Plus_Jakarta_Sans } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import './globals.css';
+
+const alexBrush = Alex_Brush({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-alex-brush',
+});
 
 const calligraphy = Great_Vibes({
   subsets: ['latin'],
@@ -52,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${calligraphy.variable} ${cormorant.variable} ${playfair.variable} ${notoHindi.variable} ${jakarta.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${alexBrush.variable} ${calligraphy.variable} ${cormorant.variable} ${playfair.variable} ${notoHindi.variable} ${jakarta.variable}`}>
       <body className="bg-paper-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen flex flex-col font-sans selection:bg-amber-200 dark:selection:bg-amber-900/50 transition-colors">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <div className="fixed inset-0 pointer-events-none opacity-20 dark:opacity-10 bg-paper-texture z-50" />
