@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import { Alex_Brush, Great_Vibes, Cormorant_Garamond, Playfair_Display, Noto_Serif_Devanagari, Plus_Jakarta_Sans } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import './globals.css';
@@ -67,8 +65,6 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
-          <Analytics />
-          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>
