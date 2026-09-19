@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Writing, SiteSettings } from '@/types/diary';
 import FormattedContent from '@/components/FormattedContent';
+import ShareImageModal from '@/components/ShareImageModal';
 import { ArrowLeft, Sparkles, Copy, Check, Share2, Eye, Calendar, Tag, BookOpen } from 'lucide-react';
 
 export default function WritingDetailPage() {
