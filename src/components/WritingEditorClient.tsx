@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Category, WritingStatus } from '@/types/diary';
-import { Sparkles, Save, Send, Image as ImageIcon, Tag, Check, AlertCircle, ArrowLeft, Bold, Italic, Quote as QuoteIcon, AlignLeft, Eye, Edit3 } from 'lucide-react';
+import { Sparkles, Save, Send, Tag, Check, AlertCircle, ArrowLeft, Bold, Italic, Quote as QuoteIcon, AlignLeft, Eye, Edit3 } from 'lucide-react';
+
 
 import { detectCategory } from '@/lib/tagging';
 import FormattedContent from '@/components/FormattedContent';
@@ -302,20 +303,6 @@ function WritingEditorContent() {
               placeholder="Write your poem, quote, or story here... Highlight any text in the middle to make it bold, italic, underlined, centered, or colored!"
             />
           )}
-        </div>
-
-        {/* Cover Image URL (Optional) */}
-        <div className="space-y-1">
-          <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold flex items-center gap-1.5">
-            <ImageIcon className="w-3.5 h-3.5" /> Cover Image URL (Optional)
-          </label>
-          <input
-            type="text"
-            placeholder="https://images.unsplash.com/..."
-            value={coverImage}
-            onChange={(e) => setCoverImage(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 text-xs font-sans focus:outline-none"
-          />
         </div>
 
         {/* AUTOMATIC TAG SUGGESTION SECTION */}
