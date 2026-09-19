@@ -176,7 +176,7 @@ export default function RichTextEditor({
 
   const formatFontFamily = (fontName: string) => {
     if (fontName === 'calligraphy') {
-      execCommand('fontName', 'Alex Brush, Great Vibes, Cormorant Garamond, serif');
+      execCommand('fontName', 'Dancing Script, Satisfy, Cormorant Garamond, serif');
     } else if (fontName === 'serif') {
       execCommand('fontName', 'Cormorant Garamond, Georgia, serif');
     } else if (fontName === 'display') {

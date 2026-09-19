@@ -1,20 +1,20 @@
 import type { Metadata } from 'next';
-import { Alex_Brush, Great_Vibes, Cormorant_Garamond, Playfair_Display, Noto_Serif_Devanagari, Plus_Jakarta_Sans } from 'next/font/google';
+import { Dancing_Script, Satisfy, Cormorant_Garamond, Playfair_Display, Noto_Serif_Devanagari, Plus_Jakarta_Sans } from 'next/font/google';
 import { ThemeProvider } from 'next-themes';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import './globals.css';
 
-const alexBrush = Alex_Brush({
+const dancingScript = Dancing_Script({
   subsets: ['latin'],
-  weight: ['400'],
-  variable: '--font-alex-brush',
+  weight: ['400', '600', '700'],
+  variable: '--font-dancing-script',
 });
 
-const calligraphy = Great_Vibes({
+const satisfy = Satisfy({
   subsets: ['latin'],
   weight: ['400'],
-  variable: '--font-calligraphy',
+  variable: '--font-satisfy',
 });
 
 const cormorant = Cormorant_Garamond({
@@ -56,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${alexBrush.variable} ${calligraphy.variable} ${cormorant.variable} ${playfair.variable} ${notoHindi.variable} ${jakarta.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${dancingScript.variable} ${satisfy.variable} ${cormorant.variable} ${playfair.variable} ${notoHindi.variable} ${jakarta.variable}`}>
       <body className="bg-paper-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-screen flex flex-col font-sans selection:bg-amber-200 dark:selection:bg-amber-900/50 transition-colors">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <div className="fixed inset-0 pointer-events-none opacity-20 dark:opacity-10 bg-paper-texture z-50" />

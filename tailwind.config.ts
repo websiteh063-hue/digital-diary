@@ -44,7 +44,7 @@ const config: Config = {
       fontFamily: {
         serif: ["var(--font-cormorant)", "Georgia", "serif"],
         display: ["var(--font-playfair)", "Georgia", "serif"],
-        calligraphy: ["var(--font-alex-brush)", "var(--font-calligraphy)", "cursive", "serif"],
+        calligraphy: ["var(--font-dancing-script)", "var(--font-satisfy)", "cursive", "serif"],
         hindi: ["var(--font-noto-hindi)", "serif"],
         sans: ["var(--font-sans)", "sans-serif"],
       },
