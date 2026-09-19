@@ -10,10 +10,10 @@ export const revalidate = 0; // dynamic
 export default function HomePage() {
   const allWritings = getAllWritings(false);
 
-  const featuredWritings = allWritings.filter(w => w.featured).slice(0, 2);
-  const latestWritings = allWritings.slice(0, 4);
-  const mostReadWritings = [...allWritings].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 3);
-  const emotionalWritings = allWritings.filter(w => ['Heartbreak', 'Love', 'Micro Poems'].includes(w.category)).slice(0, 3);
+  const featuredWritings = allWritings.filter(w => w.featured).slice(0, 4);
+  const latestWritings = allWritings.slice(0, 6);
+  const mostReadWritings = [...allWritings].sort((a, b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 6);
+  const emotionalWritings = allWritings.filter(w => ['Heartbreak', 'Love', 'Micro Poems', 'Poems'].includes(w.category)).slice(0, 6);
 
   const categoriesList: { name: Category; count: number; desc: string; gradient: string }[] = [
     { name: "Micro Poems", count: allWritings.filter(w => w.category === "Micro Poems").length, desc: "Brevity wrapped in soul", gradient: "from-indigo-500/20 via-purple-500/10 to-transparent border-indigo-500/30" },
