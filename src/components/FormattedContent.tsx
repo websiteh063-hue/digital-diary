@@ -14,7 +14,7 @@ export default function FormattedContent({ content, className = '', isHindi = fa
 
   return (
     <div 
-      className={`prose dark:prose-invert max-w-none text-stone-900 dark:text-stone-100 leading-relaxed [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500/80 [&_blockquote]:pl-5 [&_blockquote]:italic [&_blockquote]:my-5 [&_blockquote]:bg-amber-500/10 [&_blockquote]:py-3 [&_blockquote]:rounded-r-2xl [&_p]:my-4 [&_u]:decoration-amber-600/70 [&_u]:decoration-2 [&_u]:underline-offset-4 ${className}`}
+      className={`prose prose-lg sm:prose-xl dark:prose-invert max-w-none text-stone-900 dark:text-stone-100 leading-relaxed [&_blockquote]:text-xl [&_blockquote]:sm:text-2xl [&_blockquote]:font-serif [&_blockquote]:border-l-4 [&_blockquote]:border-amber-500 [&_blockquote]:pl-6 [&_blockquote]:pr-4 [&_blockquote]:py-4 [&_blockquote]:my-6 [&_blockquote]:bg-amber-500/15 [&_blockquote]:rounded-r-2xl [&_blockquote]:shadow-sm [&_p]:my-5 [&_p]:leading-relaxed [&_u]:decoration-amber-600/70 [&_u]:decoration-2 [&_u]:underline-offset-4 ${className}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

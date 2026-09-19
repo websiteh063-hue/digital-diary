@@ -89,9 +89,9 @@ export default function WritingDetailPage() {
   });
 
   const fontSizes = {
-    normal: 'text-lg leading-relaxed',
-    large: 'text-xl sm:text-2xl leading-relaxed',
-    xlarge: 'text-2xl sm:text-3xl leading-loose',
+    normal: 'text-xl sm:text-2xl leading-relaxed',
+    large: 'text-2xl sm:text-3xl leading-relaxed',
+    xlarge: 'text-3xl sm:text-4xl leading-loose',
   };
 
   const handleCopyLink = () => {
@@ -146,7 +146,7 @@ export default function WritingDetailPage() {
             {writing.category}
           </span>
 
-          <h1 className={`text-3xl sm:text-5xl font-semibold tracking-tight text-stone-950 dark:text-stone-50 leading-tight ${isHindi ? 'font-hindi' : 'font-calligraphy italic'}`}>
+          <h1 className={`text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-stone-950 dark:text-stone-50 leading-tight py-2 ${isHindi ? 'font-hindi' : 'font-calligraphy italic'}`}>
             {writing.title}
           </h1>
 

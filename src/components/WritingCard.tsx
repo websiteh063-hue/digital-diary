@@ -106,7 +106,7 @@ export default function WritingCard({ writing, featured = false }: WritingCardPr
         {/* Title */}
         <h3
           className={`text-stone-950 dark:text-stone-50 font-semibold ${catStyle.accent} transition-colors mb-3 leading-snug ${
-            isHindi ? 'font-hindi text-xl sm:text-2xl' : 'font-calligraphy text-3xl sm:text-4xl'
+            isHindi ? 'font-hindi text-2xl sm:text-3xl' : 'font-calligraphy text-4xl sm:text-5xl'
           }`}
         >
           <Link href={`/diary/${writing.slug}`} className="focus:outline-none">
@@ -117,7 +117,7 @@ export default function WritingCard({ writing, featured = false }: WritingCardPr
 
         {/* Excerpt */}
         <p
-          className={`text-stone-600 dark:text-stone-300 text-sm sm:text-base leading-relaxed line-clamp-3 mb-6 ${
+          className={`text-stone-600 dark:text-stone-300 text-base sm:text-lg leading-relaxed line-clamp-3 mb-6 ${
             isHindi ? 'font-hindi' : 'font-serif italic'
           }`}
         >
