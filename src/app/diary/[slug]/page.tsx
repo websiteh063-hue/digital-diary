@@ -102,9 +102,9 @@ export default function WritingDetailPage() {
   });
 
   const fontSizes = {
-    normal: 'text-xl sm:text-2xl leading-relaxed',
-    large: 'text-2xl sm:text-3xl leading-relaxed',
-    xlarge: 'text-3xl sm:text-4xl leading-loose',
+    normal: 'text-2xl sm:text-3xl leading-relaxed sm:leading-loose font-medium text-stone-950 dark:text-stone-50',
+    large: 'text-3xl sm:text-4xl leading-loose font-semibold text-stone-950 dark:text-stone-50',
+    xlarge: 'text-4xl sm:text-5xl leading-loose font-bold text-stone-950 dark:text-stone-50',
   };
 
   const handleCopyLink = () => {

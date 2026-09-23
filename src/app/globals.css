@@ -4,8 +4,20 @@
 
 @layer base {
   body {
-    @apply antialiased text-stone-900 bg-paper-50 dark:bg-stone-950 dark:text-stone-100;
+    @apply antialiased text-stone-950 bg-paper-50 dark:bg-stone-950 dark:text-stone-50;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+}
+
+.prose p {
+  font-weight: 450;
+  color: #0c0a09;
+}
+
+.dark .prose p {
+  color: #fafaf9;
 }
 
 /* Custom scrollbars */

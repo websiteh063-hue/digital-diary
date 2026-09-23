@@ -117,7 +117,7 @@ export default function WritingCard({ writing, featured = false }: WritingCardPr
 
         {/* Excerpt */}
         <p
-          className={`text-stone-600 dark:text-stone-300 text-base sm:text-lg leading-relaxed line-clamp-3 mb-6 ${
+          className={`text-stone-900 dark:text-stone-100 text-lg sm:text-xl font-medium leading-relaxed line-clamp-3 mb-6 ${
             isHindi ? 'font-hindi' : 'font-serif italic'
           }`}
         >
