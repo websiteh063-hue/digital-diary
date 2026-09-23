@@ -45,7 +45,12 @@ export default function WritingDetailPage() {
           } catch (e) {}
         }
 
-        const found = allWritings.find((w: Writing) => w.slug === slug);
+        const found = allWritings.find((w: Writing) => 
+          w.slug === slug || 
+          w.slug === slug.replace(/-\d+$/, '') ||
+          slug === w.slug.replace(/-\d+$/, '') ||
+          w.id === slug
+        );
         if (found) {
           setWriting(found);
           // Increment view count
@@ -89,7 +94,8 @@ export default function WritingDetailPage() {
     );
   }
 
-  const isHindi = /[\u0900-\u097F]/.test(writing.title + writing.content);
+  const isHindiTitle = /[\u0900-\u097F]/.test(writing.title);
+  const isHindiContent = /[\u0900-\u097F]/.test(writing.content);
   const signatureUrl = writing.signature || settings?.signature_image || "/signature.png";
   const taglineText = writing.tagline || settings?.tagline || `Tag someone special\nक्योंकि कुछ एहसास कहे नहीं जाते — दिखा दिए जाते हैं।\nMay the right eyes read at the right time.`;
 
@@ -159,7 +165,7 @@ export default function WritingDetailPage() {
             {writing.category}
           </span>
 
-          <h1 className={`text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-stone-950 dark:text-stone-50 leading-tight py-2 ${isHindi ? 'font-hindi' : 'font-calligraphy italic'}`}>
+          <h1 className={`text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight text-stone-950 dark:text-stone-50 leading-tight py-2 ${isHindiTitle ? 'font-hindi' : 'font-calligraphy italic'}`}>
             {writing.title}
           </h1>
 
@@ -188,8 +194,8 @@ export default function WritingDetailPage() {
         )}
 
         {/* Content Body */}
-        <div className={`text-stone-900 dark:text-stone-100 ${fontSizes[fontSize]} ${isHindi ? 'font-hindi' : 'font-serif'} py-6 border-y border-stone-200/60 dark:border-stone-800/60`}>
-          <FormattedContent content={writing.content} isHindi={isHindi} />
+        <div className={`text-stone-900 dark:text-stone-100 ${fontSizes[fontSize]} ${isHindiContent ? 'font-hindi' : 'font-serif'} py-6 border-y border-stone-200/60 dark:border-stone-800/60`}>
+          <FormattedContent content={writing.content} isHindi={isHindiContent} />
         </div>
 
         {/* Tags */}

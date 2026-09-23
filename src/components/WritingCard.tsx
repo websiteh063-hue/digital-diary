@@ -51,7 +51,8 @@ const CATEGORY_STYLES: Record<Category, { badge: string; border: string; accent:
 };
 
 export default function WritingCard({ writing, featured = false }: WritingCardProps) {
-  const isHindi = /[\u0900-\u097F]/.test(writing.title + writing.content);
+  const isHindiTitle = /[\u0900-\u097F]/.test(writing.title);
+  const isHindiContent = /[\u0900-\u097F]/.test(writing.content);
   const formattedDate = new Date(writing.created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -106,7 +107,7 @@ export default function WritingCard({ writing, featured = false }: WritingCardPr
         {/* Title */}
         <h3
           className={`text-stone-950 dark:text-stone-50 font-semibold ${catStyle.accent} transition-colors mb-3 leading-snug ${
-            isHindi ? 'font-hindi text-2xl sm:text-3xl' : 'font-calligraphy text-4xl sm:text-5xl'
+            isHindiTitle ? 'font-hindi text-2xl sm:text-3xl' : 'font-calligraphy text-4xl sm:text-5xl'
           }`}
         >
           <Link href={`/diary/${writing.slug}`} className="focus:outline-none">
@@ -118,7 +119,7 @@ export default function WritingCard({ writing, featured = false }: WritingCardPr
         {/* Excerpt */}
         <p
           className={`text-stone-900 dark:text-stone-100 text-lg sm:text-xl font-medium leading-relaxed line-clamp-3 mb-6 ${
-            isHindi ? 'font-hindi' : 'font-serif italic'
+            isHindiContent ? 'font-hindi' : 'font-serif italic'
           }`}
         >
           "{writing.excerpt}"

@@ -50,27 +50,6 @@ const SEED_WRITINGS: Writing[] = [
     "featured": true
   },
   {
-    "id": "post-tum-aksar-poochti-ho-na-1",
-    "title": "Tum Aksar Poochti Ho Na",
-    "slug": "tum-aksar-poochti-ho-na",
-    "category": "Love",
-    "content": "<p>तुम अक्सर पूछती हो ना,<br/>कि मुझे तुमसे कितना प्यार है?</p>\n<p>जैसे समंदर से लहरें पूछें कि उनका वजूद क्या है,<br/>जैसे रात से चांद पूछे कि उसकी रोशनी क्या है।<br/>तुम्हारी हर एक हँसी में मेरी पूरी दुनिया बसती है,<br/>और तुम्हारी ख़ामोशी में मेरा पूरा जहान बहता है।</p>\n<blockquote>\"तुम सिर्फ़ मेरी मोहब्बत नहीं हो,<br/>तुम मेरी हर दुआ, हर ख़्वाब और मेरी ज़िंदगी की सबसे हसीन हकीकत हो।\"</blockquote>\n<p>अब मत पूछना कभी कि कितना प्यार है तुमसे,<br/>क्योंकि मेरी हर सांस सिर्फ़ तुम्हारा ही नाम लेती है।</p>",
-    "excerpt": "तुम अक्सर पूछती हो ना, कि मुझे तुमसे कितना प्यार है? जैसे समंदर से लहरें पूछें कि उनका वजूद क्या है...",
-    "tags": [
-      "love",
-      "romantic",
-      "poetry",
-      "hindi",
-      "dear-diary"
-    ],
-    "status": "published",
-    "view_count": 0,
-    "created_at": "2026-09-23T11:34:00.000Z",
-    "updated_at": "2026-09-23T11:34:00.000Z",
-    "published_at": "2026-09-23T11:34:00.000Z",
-    "featured": true
-  },
-  {
     "id": "post-1",
     "title": "Constellations in Your Eyes",
     "slug": "constellations-in-your-eyes",
@@ -4541,23 +4520,35 @@ function ensureDB(): DBData {
 }
 
 function dedupeAndSortWritings(list: Writing[]): void {
-  // 1. Safe deduplication by unique ID (keep most recent)
-  const seen = new Map<string, Writing>();
+  // 1. Safe deduplication by unique ID & normalized title+content
+  const seenId = new Map<string, Writing>();
+  const seenTitleContent = new Map<string, Writing>();
+
   for (const item of list) {
     if (!item || !item.id) continue;
-    if (!seen.has(item.id)) {
-      seen.set(item.id, item);
+    const normTitle = (item.title || '').trim().toLowerCase();
+    const normContent = (item.content || '').trim().toLowerCase();
+    const keyTitle = `${normTitle}::${normContent}`;
+
+    const existingById = seenId.get(item.id);
+    const existingByTitle = normTitle && normContent ? seenTitleContent.get(keyTitle) : undefined;
+    const existing = existingById || existingByTitle;
+
+    if (!existing) {
+      seenId.set(item.id, item);
+      if (normTitle && normContent) seenTitleContent.set(keyTitle, item);
     } else {
-      const existing = seen.get(item.id)!;
       const timeExisting = Math.max(Date.parse(existing.updated_at || '0') || 0, Date.parse(existing.created_at || '0') || 0);
       const timeNew = Math.max(Date.parse(item.updated_at || '0') || 0, Date.parse(item.created_at || '0') || 0);
-      if (timeNew > timeExisting) {
-        seen.set(item.id, item);
+      if (timeNew >= timeExisting) {
+        seenId.delete(existing.id);
+        seenId.set(item.id, item);
+        if (normTitle && normContent) seenTitleContent.set(keyTitle, item);
       }
     }
   }
 
-  const unique = Array.from(seen.values());
+  const unique = Array.from(seenId.values());
   // 2. Sort newest created/updated first
   unique.sort((a, b) => {
     const timeA = Math.max(Date.parse(a.updated_at || '0') || 0, Date.parse(a.created_at || '0') || 0);
