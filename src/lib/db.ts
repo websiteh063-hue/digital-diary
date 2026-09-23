@@ -30,16 +30,16 @@ const DEFAULT_SETTINGS: SiteSettings = {
 const SEED_WRITINGS: Writing[] = [
   {
     "id": "post-tum-aksar-poochti-ho-na-2",
-    "title": "Tum Aksar Poochti Ho Na",
+    "title": "Tum aksar poochti ho na—",
     "slug": "tum-aksar-poochti-ho-na-2",
     "category": "Love",
-    "content": "<p>तुम अक्सर पूछती हो ना,<br/>कि मुझे तुमसे कितना प्यार है?</p>\n<p>जैसे समंदर से लहरें पूछें कि उनका वजूद क्या है,<br/>जैसे रात से चांद पूछे कि उसकी रोशनी क्या है।<br/>तुम्हारी हर एक हँसी में मेरी पूरी दुनिया बसती है,<br/>और तुम्हारी ख़ामोशी में मेरा पूरा जहान बहता है।</p>\n<blockquote>\"तुम सिर्फ़ मेरी मोहब्बत नहीं हो,<br/>तुम मेरी हर दुआ, हर ख़्वाब और मेरी ज़िंदगी की सबसे हसीन हकीकत हो।\"</blockquote>\n<p>अब मत पूछना कभी कि कितना प्यार है तुमसे,<br/>क्योंकि मेरी हर सांस सिर्फ़ तुम्हारा ही नाम लेती है।</p>",
-    "excerpt": "तुम अक्सर पूछती हो ना, कि मुझे तुमसे कितना प्यार है? जैसे समंदर से लहरें पूछें कि उनका वजूद क्या है...",
+    "content": "<p>Tum aksar poochti ho na—</p>\n<p>“Mujhme aisa kya hai jo koi mujhe pasand karega?”</p>\n<p>Toh suno…</p>\n<p>Tum jis tarah sabki fikr karti ho na,<br/>Woh fikr hi kaafi hai kisi ko tumhara deewana banane ke liye.</p>\n<blockquote>\"Tum aksar poochti ho na, ki mujhe tumse kitna pyaar hai.\"</blockquote>\n<p>Har ek baat mein tera zikr aata hai,<br/>Teri muskuraahat se hi meri duniya mein noor aata hai.</p>",
+    "excerpt": "“Mujhme aisa kya hai jo koi mujhe pasand karega?” Toh suno… Tum jis tarah sabki fikr karti ho na...",
     "tags": [
       "love",
       "romantic",
+      "hinglish",
       "poetry",
-      "hindi",
       "dear-diary"
     ],
     "status": "published",
