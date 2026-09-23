@@ -4447,7 +4447,10 @@ interface DBData {
 let memoryCache: DBData | null = null;
 
 function ensureDB(): DBData {
-  if (memoryCache) return memoryCache;
+  if (memoryCache) {
+    dedupeAndSortWritings(memoryCache.writings);
+    return memoryCache;
+  }
 
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -4457,13 +4460,16 @@ function ensureDB(): DBData {
     if (fs.existsSync(DB_FILE)) {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
       memoryCache = JSON.parse(content);
-      if (memoryCache && memoryCache.writings && memoryCache.writings.length < SEED_WRITINGS.length) {
-        const existingIds = new Set(memoryCache.writings.map(w => w.id));
-        const missingSeeds = SEED_WRITINGS.filter(s => !existingIds.has(s.id));
-        memoryCache.writings = [...memoryCache.writings, ...missingSeeds];
+      if (memoryCache && memoryCache.writings) {
+        if (memoryCache.writings.length < SEED_WRITINGS.length) {
+          const existingIds = new Set(memoryCache.writings.map(w => w.id));
+          const missingSeeds = SEED_WRITINGS.filter(s => !existingIds.has(s.id));
+          memoryCache.writings = [...memoryCache.writings, ...missingSeeds];
+        }
+        dedupeAndSortWritings(memoryCache.writings);
         saveDB(memoryCache);
+        return memoryCache!;
       }
-      return memoryCache!;
     }
   } catch (err) {
     console.warn("FileSystem database warning, falling back to memory:", err);
@@ -4474,8 +4480,38 @@ function ensureDB(): DBData {
     settings: DEFAULT_SETTINGS
   };
 
+  dedupeAndSortWritings(memoryCache.writings);
   saveDB(memoryCache);
   return memoryCache;
+}
+
+function dedupeAndSortWritings(list: Writing[]): void {
+  // 1. Safe deduplication by unique ID (keep most recent)
+  const seen = new Map<string, Writing>();
+  for (const item of list) {
+    if (!item || !item.id) continue;
+    if (!seen.has(item.id)) {
+      seen.set(item.id, item);
+    } else {
+      const existing = seen.get(item.id)!;
+      const timeExisting = Math.max(Date.parse(existing.updated_at || '0') || 0, Date.parse(existing.created_at || '0') || 0);
+      const timeNew = Math.max(Date.parse(item.updated_at || '0') || 0, Date.parse(item.created_at || '0') || 0);
+      if (timeNew > timeExisting) {
+        seen.set(item.id, item);
+      }
+    }
+  }
+
+  const unique = Array.from(seen.values());
+  // 2. Sort newest created/updated first
+  unique.sort((a, b) => {
+    const timeA = Math.max(Date.parse(a.updated_at || '0') || 0, Date.parse(a.created_at || '0') || 0);
+    const timeB = Math.max(Date.parse(b.updated_at || '0') || 0, Date.parse(b.created_at || '0') || 0);
+    return timeB - timeA;
+  });
+
+  list.length = 0;
+  list.push(...unique);
 }
 
 function saveDB(data: DBData) {
@@ -4541,7 +4577,11 @@ export function getAllWritings(includeDrafts = false): Writing[] {
   if (!includeDrafts) {
     list = list.filter(w => w.status === 'published');
   }
-  return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  return list.sort((a, b) => {
+    const timeA = Math.max(Date.parse(a.updated_at || '0') || 0, Date.parse(a.created_at || '0') || 0);
+    const timeB = Math.max(Date.parse(b.updated_at || '0') || 0, Date.parse(b.created_at || '0') || 0);
+    return timeB - timeA;
+  });
 }
 
 export function getWritingBySlug(slug: string): Writing | null {
@@ -4563,54 +4603,82 @@ export function incrementViewCount(id: string): void {
   }
 }
 
-export function saveWriting(data: Partial<Writing> & { title: string; category: Writing['category']; content: string }): Writing {
+export function saveWriting(data: Partial<Writing> & { title?: string; category?: Writing['category']; content?: string }): Writing {
   const db = ensureDB();
   const now = new Date().toISOString();
 
-  let slug = data.slug || data.title
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-');
+  // Search for existing record by ID or title+content duplicate check
+  let existingIndex = -1;
+  if (data.id) {
+    existingIndex = db.writings.findIndex(w => w.id === data.id);
+  }
 
+  // Fallback title+content duplicate check if ID not passed
+  if (existingIndex === -1 && data.title && data.content) {
+    const normTitle = data.title.trim().toLowerCase();
+    const normContent = data.content.trim().toLowerCase();
+    existingIndex = db.writings.findIndex(w =>
+      w.title.trim().toLowerCase() === normTitle &&
+      w.content.trim().toLowerCase() === normContent
+    );
+  }
+
+  // 1. UPDATE EXISTING RECORD (PATCH MERGE - NEVER DELETE FIELDS OR CREATE DUPLICATES)
+  if (existingIndex !== -1) {
+    const existing = db.writings[existingIndex];
+
+    let excerpt = existing.excerpt;
+    if (data.content !== undefined) {
+      const plain = data.content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+      excerpt = plain.length > 160 ? plain.slice(0, 157) + '...' : plain;
+    }
+
+    const updated: Writing = {
+      ...existing,
+      ...data,
+      id: existing.id, // IMMUTABLE ID
+      created_at: existing.created_at || now, // IMMUTABLE createdAt
+      updated_at: now, // Always refresh updatedAt
+      title: data.title !== undefined ? data.title : existing.title,
+      category: data.category !== undefined ? data.category : existing.category,
+      content: data.content !== undefined ? data.content : existing.content,
+      excerpt: excerpt,
+      tags: data.tags !== undefined ? data.tags : existing.tags,
+      status: data.status !== undefined ? data.status : existing.status,
+      published_at: data.status === "published" ? (existing.published_at || now) : existing.published_at,
+      cover_image: data.cover_image !== undefined ? data.cover_image : existing.cover_image,
+      featured: data.featured !== undefined ? data.featured : (existing.featured || false),
+      view_count: existing.view_count || 0,
+      signature: existing.signature || db.settings.signature_image,
+      tagline: existing.tagline || db.settings.tagline,
+    };
+
+    db.writings[existingIndex] = updated;
+    dedupeAndSortWritings(db.writings);
+    saveDB(db);
+    return updated;
+  }
+
+  // 2. CREATE NEW RECORD
+  const newId = data.id || `post-${Date.now()}`;
+  let slug = data.slug || (data.title ? data.title.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-') : `writing-${Date.now()}`);
   if (!slug) slug = `writing-${Date.now()}`;
 
-  if (!data.id) {
-    let originalSlug = slug;
-    let counter = 1;
-    while (db.writings.some(w => w.slug === slug)) {
-      slug = `${originalSlug}-${counter++}`;
-    }
+  let originalSlug = slug;
+  let counter = 1;
+  while (db.writings.some(w => w.slug === slug)) {
+    slug = `${originalSlug}-${counter++}`;
   }
 
-  const excerpt = data.excerpt || data.content
-    .replace(/<[^>]*>/g, '')
-    .replace(/\n+/g, ' ')
-    .slice(0, 160) + (data.content.length > 160 ? '...' : '');
-
-  if (data.id) {
-    const idx = db.writings.findIndex(w => w.id === data.id);
-    if (idx !== -1) {
-      const existing = db.writings[idx];
-      const updated: Writing = {
-        ...existing,
-        ...data,
-        slug: existing.slug,
-        excerpt,
-        updated_at: now,
-      };
-      db.writings[idx] = updated;
-      saveDB(db);
-      return updated;
-    }
-  }
+  const plainContent = (data.content || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  const excerpt = data.excerpt || (plainContent.length > 160 ? plainContent.slice(0, 157) + '...' : plainContent);
 
   const newWriting: Writing = {
-    id: `post-${Date.now()}`,
-    title: data.title,
+    id: newId,
+    title: data.title || "Untitled Writing",
     slug,
-    category: data.category,
-    content: data.content,
+    category: data.category || "Poems",
+    content: data.content || "",
     excerpt,
     tags: data.tags || [],
     cover_image: data.cover_image || undefined,
@@ -4625,6 +4693,7 @@ export function saveWriting(data: Partial<Writing> & { title: string; category: 
   };
 
   db.writings.unshift(newWriting);
+  dedupeAndSortWritings(db.writings);
   saveDB(db);
   return newWriting;
 }

@@ -20,9 +20,9 @@ function WritingEditorContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
 
+  const [activeId, setActiveId] = useState<string | null>(editId || null);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Category>('Poems');
-  const [isAutoCategory, setIsAutoCategory] = useState(true);
   const [content, setContent] = useState('');
   const [coverImage, setCoverImage] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -40,34 +40,26 @@ function WritingEditorContent() {
     }
   }, [editId]);
 
-  // Auto-detect category dynamically when typing title or content
-  useEffect(() => {
-    if (isAutoCategory && (title || content) && !editId) {
-      const detected = detectCategory(title, content);
-      setCategory(detected);
-    }
-  }, [title, content, isAutoCategory, editId]);
-
   const fetchWritingToEdit = async (id: string) => {
     try {
       const res = await fetch(`/api/writings/${id}`);
       const data = await res.json();
       if (data.success) {
         const w = data.data;
-        setTitle(w.title);
-        setCategory(w.category);
-        setContent(w.content);
+        setActiveId(w.id);
+        setTitle(w.title || '');
+        setCategory(w.category || 'Poems');
+        setContent(w.content || '');
         setCoverImage(w.cover_image || '');
         setTags(w.tags || []);
         setStatus(w.status || 'published');
-        setIsAutoCategory(false);
       }
     } catch (err) {
       console.error('Error fetching writing:', err);
     }
   };
 
-  // Auto Tag & Category Suggestion Engine trigger
+  // Auto Tag Suggestion Engine trigger (100% optional, never overwrites user writing or category)
   const handleSuggestTags = async () => {
     if (!content && !title) return;
     setIsSuggestingTags(true);
@@ -78,16 +70,10 @@ function WritingEditorContent() {
         body: JSON.stringify({ title, content, category }),
       });
       const data = await res.json();
-      if (data.success) {
-        if (data.tags) {
-          const merged = Array.from(new Set([...tags, ...data.tags]));
-          setTags(merged);
-        }
-        if (data.category) {
-          setCategory(data.category);
-          setIsAutoCategory(true);
-        }
-        setMessage({ type: 'success', text: `Auto-selected "${data.category || category}" category & suggested ${data.tags?.length || 0} tags!` });
+      if (data.success && data.tags) {
+        const merged = Array.from(new Set([...tags, ...data.tags]));
+        setTags(merged);
+        setMessage({ type: 'success', text: `Suggested ${data.tags.length} tags based on your writing!` });
         setTimeout(() => setMessage(null), 3000);
       }
     } catch (err) {
@@ -123,6 +109,7 @@ function WritingEditorContent() {
 
     try {
       const payload = {
+        id: activeId || undefined,
         title,
         category,
         content,
@@ -131,8 +118,8 @@ function WritingEditorContent() {
         status: targetStatus,
       };
 
-      const url = editId ? `/api/writings/${editId}` : '/api/writings';
-      const method = editId ? 'PUT' : 'POST';
+      const url = activeId ? `/api/writings/${activeId}` : '/api/writings';
+      const method = activeId ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
         method,
@@ -142,21 +129,34 @@ function WritingEditorContent() {
 
       const data = await res.json();
       if (data.success) {
-        if (data.data && typeof window !== 'undefined') {
+        const savedWriting = data.data;
+        if (savedWriting?.id) {
+          setActiveId(savedWriting.id);
+          setStatus(savedWriting.status);
+        }
+
+        // Save into local storage for offline & serverless recycling safety
+        if (savedWriting && typeof window !== 'undefined') {
           try {
             const raw = localStorage.getItem('digital_diary_user_posts');
             const localPosts = raw ? JSON.parse(raw) : [];
-            const filtered = localPosts.filter((w: any) => w.id !== data.data.id && w.slug !== data.data.slug);
-            filtered.unshift(data.data);
+            const filtered = localPosts.filter((w: any) => w.id !== savedWriting.id && w.slug !== savedWriting.slug);
+            filtered.unshift(savedWriting);
             localStorage.setItem('digital_diary_user_posts', JSON.stringify(filtered));
           } catch (e) {
             console.warn('LocalStorage save error:', e);
           }
         }
-        setMessage({ type: 'success', text: targetStatus === 'published' ? 'Writing published successfully!' : 'Draft saved successfully!' });
-        setTimeout(() => {
-          router.push('/diary');
-        }, 1200);
+
+        if (targetStatus === 'draft') {
+          setMessage({ type: 'success', text: 'Draft saved successfully.' });
+          setTimeout(() => setMessage(null), 3500);
+        } else {
+          setMessage({ type: 'success', text: 'Writing published successfully!' });
+          setTimeout(() => {
+            router.push('/diary');
+          }, 1200);
+        }
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to save writing.' });
       }
@@ -174,10 +174,10 @@ function WritingEditorContent() {
       <div className="flex items-center justify-between border-b border-stone-200/80 dark:border-stone-800/80 pb-4">
         <div>
           <h1 className="font-serif text-3xl font-medium text-stone-950 dark:text-stone-50">
-            {editId ? 'Edit Writing' : 'New Writing Studio'}
+            {activeId ? 'Edit Writing' : 'New Writing Studio'}
           </h1>
           <p className="text-xs font-sans text-stone-500 mt-1">
-            Write poems, quotes, or stories. Your tagline and signature will automatically append when published.
+            Write poems, quotes, stories, or diary entries. You have complete manual control over content and categories.
           </p>
         </div>
 
@@ -197,7 +197,7 @@ function WritingEditorContent() {
             className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-stone-900 text-stone-50 dark:bg-amber-400 dark:text-stone-950 text-xs font-sans font-medium uppercase tracking-wider hover:opacity-90 transition-all shadow-md"
           >
             <Send className="w-4 h-4" />
-            {editId ? 'Update & Publish' : 'Publish Writing'}
+            {activeId ? 'Update & Publish' : 'Publish Writing'}
           </button>
         </div>
       </div>
@@ -218,7 +218,7 @@ function WritingEditorContent() {
         {/* Title & Category Row */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           
-          {/* Title with Fancy Calligraphy font */}
+          {/* Title with Calligraphy font */}
           <div className="md:col-span-8 space-y-1">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold">
@@ -230,43 +230,21 @@ function WritingEditorContent() {
             </div>
             <input
               type="text"
-              placeholder="Enter writing title (English or Hindi)..."
+              placeholder="Enter title..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 text-stone-950 dark:text-stone-50 font-calligraphy italic text-3xl font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/50 placeholder:font-serif placeholder:not-italic placeholder:text-lg"
             />
           </div>
 
-          {/* Category Dropdown with Auto Detection */}
+          {/* Manual Category Selection Dropdown */}
           <div className="md:col-span-4 space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold">
-                Category
-              </label>
-              {isAutoCategory ? (
-                <span className="text-[10px] font-sans font-medium text-amber-700 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full flex items-center gap-1 border border-amber-500/30">
-                  <Sparkles className="w-3 h-3 text-amber-600" /> Auto Detected
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsAutoCategory(true);
-                    setCategory(detectCategory(title, content));
-                  }}
-                  className="text-[10px] font-sans font-medium text-stone-500 hover:text-amber-600 dark:hover:text-amber-400 flex items-center gap-1 transition-colors"
-                  title="Click to auto-select category based on title & text"
-                >
-                  <Sparkles className="w-3 h-3" /> Auto Select
-                </button>
-              )}
-            </div>
+            <label className="block text-xs font-sans uppercase tracking-wider text-stone-500 font-semibold">
+              Category (Manual Choice)
+            </label>
             <select
               value={category}
-              onChange={(e: any) => {
-                setCategory(e.target.value);
-                setIsAutoCategory(false);
-              }}
+              onChange={(e: any) => setCategory(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-stone-300 dark:border-stone-700 bg-paper-100/50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans text-sm focus:outline-none focus:ring-2 focus:ring-stone-400"
             >
               {CATEGORIES.map((cat) => (
