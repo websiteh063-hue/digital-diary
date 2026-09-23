@@ -296,6 +296,55 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* DATABASE BACKUP & PERSISTENCE TOOLS */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-amber-500/10 border border-amber-500/20 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
+            <h2 className="font-serif text-xl font-medium text-stone-900 dark:text-stone-100 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-600" />
+              Database Backup & Cloud Persistence
+            </h2>
+            <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-sans font-bold tracking-wider uppercase">
+              Data Safety
+            </span>
+          </div>
+          
+          <p className="text-xs font-sans text-stone-700 dark:text-stone-300 leading-relaxed">
+            Your writings are automatically preserved in your browser's local memory on phone and computer. For zero-maintenance serverless persistence across all devices:
+          </p>
+
+          <div className="bg-paper-100/80 dark:bg-stone-950 p-4 rounded-xl border border-stone-200 dark:border-stone-800 space-y-2 text-xs font-sans text-stone-800 dark:text-stone-200">
+            <p className="font-semibold text-amber-700 dark:text-amber-400">💡 Tip for Permanent Auto-Saving across all phones & devices:</p>
+            <p className="text-stone-600 dark:text-stone-400">
+              Add your <code className="bg-stone-200 dark:bg-stone-800 px-1.5 py-0.5 rounded text-amber-600 dark:text-amber-300">GITHUB_TOKEN</code> in Vercel Environment Variables. When present, every post created from your phone automatically commits back to GitHub!
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3 pt-2">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/writings?drafts=true');
+                  const data = await res.json();
+                  if (data.success) {
+                    const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `digital_diary_backup_${new Date().toISOString().slice(0,10)}.json`;
+                    a.click();
+                  }
+                } catch (e) {
+                  alert('Error downloading backup: ' + e);
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-stone-900 text-stone-50 dark:bg-stone-100 dark:text-stone-950 text-xs font-sans font-medium hover:opacity-90 transition-all shadow-sm"
+            >
+              📥 Download Full JSON Backup (216+ Writings)
+            </button>
+          </div>
+        </div>
+
         {/* Save Settings Button */}
         <div className="flex justify-end">
           <button

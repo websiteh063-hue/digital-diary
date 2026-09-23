@@ -36,7 +36,19 @@ function DiaryContent() {
       const res = await fetch(`/api/writings?${params.toString()}`);
       const data = await res.json();
       if (data.success) {
-        setWritings(data.data);
+        let fetched: Writing[] = data.data;
+        if (typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem('digital_diary_user_posts');
+            if (raw) {
+              const localPosts: Writing[] = JSON.parse(raw);
+              const fetchedIds = new Set(fetched.map(w => w.id));
+              const missingLocal = localPosts.filter(w => !fetchedIds.has(w.id));
+              fetched = [...missingLocal, ...fetched];
+            }
+          } catch (e) {}
+        }
+        setWritings(fetched);
       }
     } catch (err) {
       console.error("Failed to load writings:", err);

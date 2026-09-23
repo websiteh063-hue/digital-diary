@@ -4438,3 +4438,219 @@ const SEED_WRITINGS: Writing[] = [
     "featured": false
   }
 ];
+
+interface DBData {
+  writings: Writing[];
+  settings: SiteSettings;
+}
+
+let memoryCache: DBData | null = null;
+
+function ensureDB(): DBData {
+  if (memoryCache) return memoryCache;
+
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+
+    if (fs.existsSync(DB_FILE)) {
+      const content = fs.readFileSync(DB_FILE, 'utf-8');
+      memoryCache = JSON.parse(content);
+      if (memoryCache && memoryCache.writings && memoryCache.writings.length < SEED_WRITINGS.length) {
+        const existingIds = new Set(memoryCache.writings.map(w => w.id));
+        const missingSeeds = SEED_WRITINGS.filter(s => !existingIds.has(s.id));
+        memoryCache.writings = [...memoryCache.writings, ...missingSeeds];
+        saveDB(memoryCache);
+      }
+      return memoryCache!;
+    }
+  } catch (err) {
+    console.warn("FileSystem database warning, falling back to memory:", err);
+  }
+
+  memoryCache = {
+    writings: SEED_WRITINGS,
+    settings: DEFAULT_SETTINGS
+  };
+
+  saveDB(memoryCache);
+  return memoryCache;
+}
+
+function saveDB(data: DBData) {
+  memoryCache = data;
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    
+    // Asynchronously commit to GitHub repo if GITHUB_TOKEN environment variable is present
+    if (process.env.GITHUB_TOKEN) {
+      syncToGitHub(data).catch((e) => console.warn("GitHub sync error:", e));
+    }
+  } catch (err) {
+    console.warn("Unable to save DB to disk:", err);
+  }
+}
+
+async function syncToGitHub(data: DBData) {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return;
+  try {
+    const owner = "websiteh063-hue";
+    const repo = "digital-diary";
+    const path = "data/diary.json";
+
+    const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Digital-Diary-App'
+      }
+    });
+
+    if (!getRes.ok) return;
+    const fileInfo = await getRes.json();
+    const sha = fileInfo.sha;
+
+    const contentEncoded = Buffer.from(JSON.stringify(data, null, 2)).toString('base64');
+    await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'Digital-Diary-App'
+      },
+      body: JSON.stringify({
+        message: 'Auto-save writing from admin live site',
+        content: contentEncoded,
+        sha
+      })
+    });
+  } catch (err) {
+    console.warn("GitHub auto-sync exception:", err);
+  }
+}
+
+export function getAllWritings(includeDrafts = false): Writing[] {
+  const db = ensureDB();
+  let list = db.writings;
+  if (!includeDrafts) {
+    list = list.filter(w => w.status === 'published');
+  }
+  return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+export function getWritingBySlug(slug: string): Writing | null {
+  const db = ensureDB();
+  return db.writings.find(w => w.slug === slug) || null;
+}
+
+export function getWritingById(id: string): Writing | null {
+  const db = ensureDB();
+  return db.writings.find(w => w.id === id) || null;
+}
+
+export function incrementViewCount(id: string): void {
+  const db = ensureDB();
+  const writing = db.writings.find(w => w.id === id);
+  if (writing) {
+    writing.view_count = (writing.view_count || 0) + 1;
+    saveDB(db);
+  }
+}
+
+export function saveWriting(data: Partial<Writing> & { title: string; category: Writing['category']; content: string }): Writing {
+  const db = ensureDB();
+  const now = new Date().toISOString();
+
+  let slug = data.slug || data.title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+
+  if (!slug) slug = `writing-${Date.now()}`;
+
+  if (!data.id) {
+    let originalSlug = slug;
+    let counter = 1;
+    while (db.writings.some(w => w.slug === slug)) {
+      slug = `${originalSlug}-${counter++}`;
+    }
+  }
+
+  const excerpt = data.excerpt || data.content
+    .replace(/<[^>]*>/g, '')
+    .replace(/\n+/g, ' ')
+    .slice(0, 160) + (data.content.length > 160 ? '...' : '');
+
+  if (data.id) {
+    const idx = db.writings.findIndex(w => w.id === data.id);
+    if (idx !== -1) {
+      const existing = db.writings[idx];
+      const updated: Writing = {
+        ...existing,
+        ...data,
+        slug: existing.slug,
+        excerpt,
+        updated_at: now,
+      };
+      db.writings[idx] = updated;
+      saveDB(db);
+      return updated;
+    }
+  }
+
+  const newWriting: Writing = {
+    id: `post-${Date.now()}`,
+    title: data.title,
+    slug,
+    category: data.category,
+    content: data.content,
+    excerpt,
+    tags: data.tags || [],
+    cover_image: data.cover_image || undefined,
+    status: data.status || "published",
+    view_count: 0,
+    created_at: now,
+    updated_at: now,
+    published_at: data.status === "published" ? now : "",
+    featured: data.featured || false,
+    signature: db.settings.signature_image,
+    tagline: db.settings.tagline,
+  };
+
+  db.writings.unshift(newWriting);
+  saveDB(db);
+  return newWriting;
+}
+
+export function deleteWriting(id: string): boolean {
+  const db = ensureDB();
+  const initialLen = db.writings.length;
+  db.writings = db.writings.filter(w => w.id !== id);
+  if (db.writings.length !== initialLen) {
+    saveDB(db);
+    return true;
+  }
+  return false;
+}
+
+export function getSettings(): SiteSettings {
+  const db = ensureDB();
+  return db.settings;
+}
+
+export function updateSettings(newSettings: Partial<SiteSettings>): SiteSettings {
+  const db = ensureDB();
+  db.settings = {
+    ...db.settings,
+    ...newSettings
+  };
+  saveDB(db);
+  return db.settings;
+}

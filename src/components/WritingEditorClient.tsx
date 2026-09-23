@@ -142,6 +142,17 @@ function WritingEditorContent() {
 
       const data = await res.json();
       if (data.success) {
+        if (data.data && typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem('digital_diary_user_posts');
+            const localPosts = raw ? JSON.parse(raw) : [];
+            const filtered = localPosts.filter((w: any) => w.id !== data.data.id && w.slug !== data.data.slug);
+            filtered.unshift(data.data);
+            localStorage.setItem('digital_diary_user_posts', JSON.stringify(filtered));
+          } catch (e) {
+            console.warn('LocalStorage save error:', e);
+          }
+        }
         setMessage({ type: 'success', text: targetStatus === 'published' ? 'Writing published successfully!' : 'Draft saved successfully!' });
         setTimeout(() => {
           router.push('/diary');

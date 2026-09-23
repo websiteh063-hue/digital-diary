@@ -32,7 +32,20 @@ export default function WritingDetailPage() {
       const res = await fetch('/api/writings');
       const data = await res.json();
       if (data.success) {
-        const found = data.data.find((w: Writing) => w.slug === slug);
+        let allWritings: Writing[] = data.data;
+        if (typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem('digital_diary_user_posts');
+            if (raw) {
+              const localPosts: Writing[] = JSON.parse(raw);
+              const fetchedIds = new Set(allWritings.map(w => w.id));
+              const missingLocal = localPosts.filter(w => !fetchedIds.has(w.id));
+              allWritings = [...missingLocal, ...allWritings];
+            }
+          } catch (e) {}
+        }
+
+        const found = allWritings.find((w: Writing) => w.slug === slug);
         if (found) {
           setWriting(found);
           // Increment view count
