@@ -23,7 +23,7 @@ export default function HomePageClient({ initialWritings }: HomePageClientProps)
   const [sortOption, setSortOption] = useState<"newest" | "oldest" | "most_read">("newest");
   const [displayCount, setDisplayCount] = useState<number>(12);
 
-  // Merge client-side localStorage posts if any exist
+  // Merge client-side localStorage posts if any exist & auto-sync missing posts to server
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -34,6 +34,14 @@ export default function HomePageClient({ initialWritings }: HomePageClientProps)
           const missingLocal = localPosts.filter(w => !existingIds.has(w.id));
           if (missingLocal.length > 0) {
             setAllWritings([...missingLocal, ...initialWritings]);
+            // Re-sync missing local posts back to server in background
+            missingLocal.forEach(post => {
+              fetch('/api/writings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(post)
+              }).catch(err => console.warn('Sync missing post failed:', err));
+            });
           }
         }
       } catch (e) {}

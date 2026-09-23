@@ -44,7 +44,16 @@ function DiaryContent() {
               const localPosts: Writing[] = JSON.parse(raw);
               const fetchedIds = new Set(fetched.map(w => w.id));
               const missingLocal = localPosts.filter(w => !fetchedIds.has(w.id));
-              fetched = [...missingLocal, ...fetched];
+              if (missingLocal.length > 0) {
+                fetched = [...missingLocal, ...fetched];
+                missingLocal.forEach(post => {
+                  fetch('/api/writings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(post)
+                  }).catch(err => console.warn('Sync missing post failed:', err));
+                });
+              }
             }
           } catch (e) {}
         }
