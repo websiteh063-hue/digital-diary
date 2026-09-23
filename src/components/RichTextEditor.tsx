@@ -66,14 +66,17 @@ export default function RichTextEditor({
   // Floating bubble selection menu position state
   const [bubblePosition, setBubblePosition] = useState<{ top: number; left: number } | null>(null);
 
+  const lastEmittedHtml = useRef<string | null>(null);
+
   // Sync value into contentEditable when loaded externally
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      if (!isFocused || !editorRef.current.innerHTML.trim()) {
+    if (editorRef.current) {
+      if (value !== lastEmittedHtml.current) {
         editorRef.current.innerHTML = value || '';
+        lastEmittedHtml.current = value || '';
       }
     }
-  }, [value, isFocused]);
+  }, [value]);
 
   // Track selection change & active format state
   useEffect(() => {
@@ -139,7 +142,9 @@ export default function RichTextEditor({
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      const html = editorRef.current.innerHTML;
+      lastEmittedHtml.current = html;
+      onChange(html);
     }
   };
 
@@ -163,15 +168,14 @@ export default function RichTextEditor({
   const execCommand = (command: string, valueArg: string | undefined = undefined) => {
     document.execCommand(command, false, valueArg);
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      const html = editorRef.current.innerHTML;
+      lastEmittedHtml.current = html;
+      onChange(html);
     }
   };
 
   const insertStanzaBreak = () => {
     execCommand('insertParagraph');
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
   };
 
   const formatFontFamily = (fontName: string) => {

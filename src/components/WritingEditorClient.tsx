@@ -37,6 +37,14 @@ function WritingEditorContent() {
   useEffect(() => {
     if (editId) {
       fetchWritingToEdit(editId);
+    } else {
+      setActiveId(null);
+      setTitle('');
+      setCategory('Poems');
+      setContent('');
+      setCoverImage('');
+      setTags([]);
+      setStatus('published');
     }
   }, [editId]);
 
@@ -133,6 +141,9 @@ function WritingEditorContent() {
         if (savedWriting?.id) {
           setActiveId(savedWriting.id);
           setStatus(savedWriting.status);
+          if (typeof window !== 'undefined' && window.history) {
+            window.history.replaceState(null, '', `/admin/editor?edit=${savedWriting.id}`);
+          }
         }
 
         // Save into local storage for offline & serverless recycling safety
