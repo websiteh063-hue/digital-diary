@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { Writing, SiteSettings } from '@/types/diary';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'diary.json');
+const TMP_DB_FILE = path.join(os.tmpdir(), 'digital_diary_temp.json');
 
 export const DEFAULT_TAGLINE = `Tag someone special
 क्योंकि कुछ एहसास कहे नहीं जाते — दिखा दिए जाते हैं।
@@ -4494,36 +4496,47 @@ function ensureDB(): DBData {
     return memoryCache;
   }
 
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
+  let fileWritings: Writing[] = [];
+  let fileSettings: SiteSettings = DEFAULT_SETTINGS;
 
+  // 1. Read base diary.json from repo
+  try {
     if (fs.existsSync(DB_FILE)) {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
-      memoryCache = JSON.parse(content);
-      if (memoryCache && memoryCache.writings) {
-        if (memoryCache.writings.length < SEED_WRITINGS.length) {
-          const existingIds = new Set(memoryCache.writings.map(w => w.id));
-          const missingSeeds = SEED_WRITINGS.filter(s => !existingIds.has(s.id));
-          memoryCache.writings = [...memoryCache.writings, ...missingSeeds];
-        }
-        dedupeAndSortWritings(memoryCache.writings);
-        saveDB(memoryCache);
-        return memoryCache!;
+      const parsed = JSON.parse(content);
+      if (parsed && parsed.writings) {
+        fileWritings = parsed.writings;
+        if (parsed.settings) fileSettings = parsed.settings;
       }
     }
-  } catch (err) {
-    console.warn("FileSystem database warning, falling back to memory:", err);
+  } catch (err) {}
+
+  // 2. Read ephemeral /tmp storage if present (Vercel serverless persistence)
+  try {
+    if (fs.existsSync(TMP_DB_FILE)) {
+      const tmpContent = fs.readFileSync(TMP_DB_FILE, 'utf-8');
+      const tmpParsed = JSON.parse(tmpContent);
+      if (tmpParsed && tmpParsed.writings) {
+        fileWritings = [...tmpParsed.writings, ...fileWritings];
+      }
+    }
+  } catch (err) {}
+
+  // 3. Fallback to SEED_WRITINGS if empty
+  if (fileWritings.length === 0) {
+    fileWritings = [...SEED_WRITINGS];
+  } else {
+    const existingIds = new Set(fileWritings.map(w => w.id));
+    const missingSeeds = SEED_WRITINGS.filter(s => !existingIds.has(s.id));
+    fileWritings = [...fileWritings, ...missingSeeds];
   }
 
   memoryCache = {
-    writings: SEED_WRITINGS,
-    settings: DEFAULT_SETTINGS
+    writings: fileWritings,
+    settings: fileSettings
   };
 
   dedupeAndSortWritings(memoryCache.writings);
-  saveDB(memoryCache);
   return memoryCache;
 }
 
@@ -4558,18 +4571,26 @@ function dedupeAndSortWritings(list: Writing[]): void {
 
 function saveDB(data: DBData) {
   memoryCache = data;
+  let savedToDisk = false;
+
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-    
-    // Asynchronously commit to GitHub repo if GITHUB_TOKEN environment variable is present
-    if (process.env.GITHUB_TOKEN) {
-      syncToGitHub(data).catch((e) => console.warn("GitHub sync error:", e));
+    savedToDisk = true;
+  } catch (err: any) {
+    // If filesystem is read-only (Vercel serverless runtime), save to /tmp
+    try {
+      fs.writeFileSync(TMP_DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+      savedToDisk = true;
+    } catch (tmpErr) {
+      // In-memory cache is active even if filesystem is strictly read-only
     }
-  } catch (err) {
-    console.warn("Unable to save DB to disk:", err);
+  }
+
+  if (process.env.GITHUB_TOKEN) {
+    syncToGitHub(data).catch((e) => console.warn("GitHub sync error:", e));
   }
 }
 
