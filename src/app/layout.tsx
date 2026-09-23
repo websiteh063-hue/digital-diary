@@ -40,7 +40,7 @@ const jakarta = Plus_Jakarta_Sans({
   variable: '--font-sans',
 });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Digital Diary | Personal Literary Space',
   description: 'Some feelings are written. Some are lived. And some stay somewhere between the two. A personal space for micro poems, long poems, quotes, stories, heartbreak & romantic writings.',
   openGraph: {
